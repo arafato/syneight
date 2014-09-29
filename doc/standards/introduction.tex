@@ -1,0 +1,227 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Introduction}
+\label{cha:introduction}
+
+
+\section{The Goal}
+\label{sec:goal}
+
+\SYNEIGHT will be implemented in C++. C++ is not the best language
+around, but it is the appropriate vehicle for the task at hand for
+several reasons, most notably, it allows the implementation to exploit
+low-level mechanisms, and it allows to provide high-level
+abstractions.  The problems inherent to C++ projects arise for the
+very same reasons -- developers can place their implementation at many
+different abstraction levels.  In most cases, there is a whole variety
+of design and implementation strategies to choose from.
+
+%
+This document will establish the coding guidelines to be adhered
+within the \SYNEIGHT project. 
+%
+Coding guidelines cannot define how a component\footnote{See
+  Definition \vref{def:component} for the meaning of ``component'' in
+  the context of \SYNEIGHT.} (or a group of cooperating components)
+must be designed, but they do define \emph{formal criteria} a
+component must fulfill.
+% 
+For example, we will define the physical organization of a component
+(i.e., which files constitute a component), or how we state
+assertions.
+
+
+
+\section{Software as Diagram}
+\label{sec:software-as-diagram}
+
+Specifications, architecture and design are established to guide the
+development at large, i.e., they define \emph{components}, their
+\emph{externally visible behavior}, and their \emph{interrelations
+  with respect to several structures}. Examples for such structures
+are module decomposition, module layering, shared objects, allocation
+of threads to tasks and their communication protocols, allocation of
+processes to tasks and their communication protocols, and allocation
+of developers to components and modules.\\
+%
+The concept of the externally visible behavior is often much more
+involved than it appears at first. What is externally visible? If the
+component is modeled as a class, it might be the signature of their
+publicly accessible methods. This signature is certainly part of the
+externally visible behavior -- but it is \emph{only part} of the
+behavior. The memory consumption, the thread awareness, the exception
+safety, the execution time, the pre/post conditions, the internally
+used assertions, and the log messages produced during execution of a
+method are certainly also part of the behavior which is relevant for
+the developer of a component who uses the component in concern.
+Depending on the nature of the usage pattern, different aspects are
+more or less important to the user. Thus, it is hard to define the set
+of characteristics which are relevant in the \emph{interface
+  definition -- in the sense we will use this term henceforth:}
+\begin{definition*}{Interface}
+  The interface of a component is the externally visible and
+  explicitly defined behavior of this component.
+\end{definition*}
+%
+We discussed the term externally visible, however, the definition
+above is also requiring that the properties of an interface are
+explicitly defined. Therefore, every property which is not explicitly
+defined as a property of the interface is not a property of the
+interface, i.e., it can change at any point in time.\\
+%
+Certainly, it is not possible to define the complete external
+observable behavior for every component. And there are a lot of common
+properties -- since we want to have a feeling of uniformity within our
+components. 
+%
+Thus, standards are necessary to define the basic properties of
+components.
+
+But what is a component? A component is the smallest unit which is
+relevant in terms of software architecture. This is somewhat
+arbitrary -- we will use the following definition.
+\begin{definition*}{Component}
+  A component is a cohesive implementation unit which is small enough
+  such that it can be rewritten easily from scratch.
+\end{definition*}
+%
+Basically, the definition aims at the following goal: If a component
+does not work properly, it can be discarded and rewritten easily. Being
+able to discard a module means that it is also possible to reuse the
+surrounding modules independently.\\
+%
+It is not necessary to cope with some old buggy code -- it is possible
+to discard a component if necessary. What easily means, depends on the
+context of the project -- we will use one week of work by one
+developer as definition of easy.\\
+%
+%
+We used the term \emph{relevant in terms of software architecture}
+beforehand. Thus, the goal of software architecture is to provide a
+blueprint for the components which will make up the final software
+system -- or in our case, the initial software system. The components
+of a system are not interrelated by one structure, but a whole set of
+structures. This gives the definition of software architecture, we
+will use in this project.
+%
+\begin{definition*}{Software Architecture}
+  Software architecture describes the components of a software system,
+  their externally visible behavior, and their interrelationships with
+  respect to a set of structures.  
+\end{definition*}
+%
+So, it is our goal to come up with a software architecture which
+allows us to develop the components mostly independent of each other.
+And we expect that they do work correctly together at the end, if they
+adhered the rules which were established by the software
+architecture.
+
+%% \CS: To be expanded when annotations are done
+%%
+%%
+%% Let's leave the introduction for the time being
+%%
+%% One more word about software in the large: Besides classical
+%% functional requirements, one also needs to state \emph{qualities} of
+%% software, i.e., properties which cannot be localized within a
+%% restricted set of components. A quality is a property that affects the
+%% software system as a whole. 
+%% %
+
+
+\section{Software as Code}
+\label{sec:software-as-code}
+
+%
+It is infeasible to constrain every aspect of the interface of a
+component explicitly. Especially, every developer has a set of basic
+assumptions. A class which does not obey these assumptions is
+cumbersome to use, since these assumptions are the least to be checked
+for violation. Especially C++ gives the developer the possibility to
+tamper with these basic rules of conduct.
+%
+
+Thus this document will make these assumptions explicit and establish
+the conditions to be met such that these assumptions are met by an
+actual implementation. The coding guidelines are aimed at the
+following three goals:
+\begin{itemize}
+\item Ensure that components behave in an intuitive way and are
+  reusable in broad context.
+\item Ensure that components are true abstractions which are easily
+  accessible, i.e., a developer using a new component should be able
+  to do so quickly. 
+\item Ensure that architectural constraints on a component can be
+  validated effectively.
+\end{itemize}
+%
+
+
+\section{Organization}
+\label{sec:organization}
+
+
+We can group the coding guidelines according to different aspects.
+Some deal with intrinsic aspects of the C++ language, such as copying
+semantics and integer propagation, other deal with testability and
+audibility. Documentation is governed by standards, too. Finally,
+there are some guidelines which are not directly reflected in the
+code, but in the way, we develop our code.
+
+\begin{description}
+\item[Component Structure:] Each component will be established by a
+  set of files, namely by the interface (*.hpp), the implementation
+  (*.cpp / *.impl.hpp) and the test (*.t.cpp) file. 
+\item[C++ Language:] Here we will rely mostly on
+  \emph{Large Scale C++ Software Design} by John Lakos --
+  but we will add our own set of guidelines within this document. 
+\item[Annotations:] We will use a rich set of code annotations. They
+  will partly replace implementation documentation -- instead of
+  writing that some condition should be met, we implement a test that
+  checks this condition. Based on three debug levels, we will be able
+  to implement even very costly checks.\\
+  %
+  The very same annotations will allow us to trace program executions,
+  analyze their interactions, test the correctness of components, and
+  benchmark our implementations.
+\item[Documentation:] We document the implementation with {\tt doxygen}, a
+  tool for automated documentation generation, based on structured
+  comments.
+\item[Latex Standards:] We will use the same structure for all (at
+  least for all bigger) documents. To make editing easy, we will set
+  forth a set of guidelines.
+\item[General Development Rules:] One example for such a rule: ``There
+  is no intermediate -- code is designated to be either reused or
+  rewritten. Make that explicit in any component.''
+\end{description}
+
+
+We will use the following terms within this document:
+%
+\begin{description}
+\item[Rule:] A rule has to be obeyed in all cases. There are \emph{no}
+  exceptions.
+\item[Guideline:] A guideline is a rule which should be adhered whenever
+  possible. 
+\item[Definition:] Self-explaining. In this document, we do not use
+  definition too intensively, a lot of times, we will formulate rules
+  which define terms implicitly. 
+\end{description}
+
+\begin{rule*}{Breaking Guidelines}
+  If a developer thinks that it is unavoidable to break a guideline, a
+  brief argumentation for the need to do so must be added to the code.
+  Also, a warning must be added to the documentation if the violation
+  of guideline affects parts of the corresponding component interface.
+\end{rule*}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End: 
+% vim:ts=4:sw=4

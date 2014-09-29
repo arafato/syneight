@@ -1,0 +1,259 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Motivation Draft}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{What is \SYNEIGHT}
+Leading idea: ``Abstract description of \SYNEIGHT''.
+
+Pure prose.
+
+In short:
+\begin{description}
+\item[Domain independent] define -- use C++ Network Programming,
+Schmidt, page 8
+\item[Transaction oriented] use the term extended atomic transactions
+\item[Soft real-time] define -- Kopetz
+\item[Cluster / SMP] SMP: uniform memory, cluster. Clustering for
+scalability and availability. We use SMP machines as a nodes since to
+keep the number of nodes small -- and thus, the communication
+overhead.
+\end{description}
+
+Think about ordering of these issues. 
+
+Problem: Not \MMORGS, not \NVES. These two are motivations which we
+will discuss in great length in this chapter -- but they are not
+defining \SYNEIGHT. Thus, they do not appear in this section.
+
+10 Sentences
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Motivating Application Domain}
+Leading idea: ``Which domain, why is the domain interesting, which
+domain structure.''
+
+Better Structure (convert this section here into this form):
+\begin{itemize}
+	\item MMORGS -- A new Entertainment World
+	\begin{itemize}
+		\item Define MMORGS
+		\item ``Why MMORGS''
+		\item short: the rest of the section
+	\end{itemize}
+	\item ''what are nves'' with applications
+	\item MMORGS in detail
+	\begin{itemize}
+		\item maybe more detailed definition
+		\item MMORGS are a special case of NVEs
+		\item industrial interest
+  		\item characteristics \& challenges
+		\item feasibility study
+	\end{itemize}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{\MMORGS -- A new Entertainment World}
+Needs a better catchy expression:
+\begin{itemize}
+	\item A new Entertainment World
+	\item The new Chellange
+	\item \dots
+\end{itemize}
+
+\subsubsection{What are \MMORGS}
+Definition \ldots
+
+\subsubsection{The interest in \MMORGS}
+\begin{itemize}
+	\item Academic Interest
+	\begin{itemize}
+		\item Subsumes Many general NVE Problems
+		\item It is a game:
+		\item Incredible wishlist
+		\item Tolerant ( The world is not going under when something crashes )
+		\item Bottomline: Interesting research ground
+	\end{itemize}
+	\item Industrial Interest
+	\begin{itemize}
+		\item Feasibility study
+	\end{itemize}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{What are \NVES}
+
+\MMORG is a specialization of \NVE.
+
+based on virtual environments papers
+
+adding networking (cf. overview paper) -- usage of networking in terms
+of a, load distribution, and b, geographically dispersed access
+
+read the stuff! /usr/local/data/syneight/literature/nve/survey, read
+the papers, check out what's going on.
+
+Also integrate the applications:
+\begin{itemize}
+        \item Military Simulations
+        \item CSCW ( Computer Supported Cooperative Work for example
+              Virtual meetings)
+        \item Educational
+        \item Entertainment
+        \item \dots
+\end{itemize}
+
+Application Elements? Leave blank in the first run.
+\begin{itemize}
+        \item X-Reality
+        \item Augmented Reality
+        \item Simulation
+        \item \dots
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\MMORGS in detail}
+Characteristics \& Challenges
+\begin{itemize}
+	\item maybe more detailed definition
+	\item MMORGS are a special case of NVEs
+	\item industrial interest
+	\item characteristics \& challenges
+	\item feasibility study
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The services of a \MMORG}
+Leading Idea: ``OK. So that's the way you can structure such a
+biest.''
+
+\textbf{Feasibility Study}
+
+Show the graphic about domains in a MMORG system\\ Show the
+localization of syneight in that model
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Production Domain}
+
+describe and show requirements
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Maintenance Domain}
+
+describe and show requirements
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Gaming Domain}
+
+describe and show requirements
+
+\begin{enumerate}
+\item Abstract Requirements
+\item Gaming has stable requirements
+\item Production/Maintainer domains have unstable requirements
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Approach of \SYNEIGHT}
+Leading idea: ``Where is \SYNEIGHT: We have an idea of the domain, we
+have a very abstract idea of \SYNEIGHT, how do these concepts match?
+What is \SYNEIGHT doing in the context of the domain specific services
+of a \MMORG.''
+
+Idea. Starting from the domain specific services, we go refine the
+concept of \SYNEIGHT subsequently. We give an informal and quite
+abstract description of the interface. Then we introduce stepwise
+other central forces such as target platforms. And we describe how we
+reflected these forces within \SYNEIGHT. The end of the Section should
+give the reader a summarizing, lengthy definition of \SYNEIGHT (not
+necessarily marked as a formal definition).
+
+
+\SYNEIGHT covers that and that and leaves that and that issue to the
+higher levels.
+
+And why we do this selection. 
+\begin{itemize}
+\item remember the conclusion of the last section.
+\item then we can support other \NVES -- you could say, \SYNEIGHT is
+the synchronization essence of an \NVE.
+\end{itemize}
+
+%\subsection {\SYNEIGHT Load Distribution}
+
+use this list for argumentation: Load Distribution (LD)
+\begin{itemize}
+        \item NVEs of a certain size require Clusters
+        \item LD more fundamental
+        \item Traffic slenderizing
+        \item Data Reckoning and Data Bulking
+              $\Rightarrow$ Internet (Traffic costs
+              really a lot!)\\
+              $\Rightarrow$ Good strategies are App/Game
+              specific (Domain specific)
+	\item Ideally it should be possible to have "Virtual Machine"
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Alternatives}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{From Scratch}
+
+One-Time only shot >\_< (KAPUTT)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{\MMORG Engines}
+
+\begin{itemize}
+        \item Domain specific (\_NOT\_FOR\_US\_)
+        \item Inferior
+        \item List of available engines: Zyta, Butterfly (Ask A.V.M.)
+\end{itemize}
+
+Too restrictive. Does not deal with the chellanges. Are not Seamless!
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Existing Technologies}
+
+\subsubsection{Relational and Object Oriented Data Base Systems}
+
+Not built for Seamless Real Time Cluster systems with OO\\
+Client server structure, we are P2P
+
+\subsubsection{Distributed Shared Memory}
+
+Locking?\\
+Not built for Seamless Real Time Cluster systems with OO\\
+Uncontrolled Growth
+
+\subsubsection{Message Passing Systems and Frameworks}
+
+list multiple solutions: PVM MP Mosix ...\\
+easy
+
+Describe 3-4 most known representatives
+\begin{itemize}
+        \item Not OO
+        \item Not Seamless
+        \item Intra-process syncronisation
+        \item Not uniform
+\end{itemize}
+
+% vim:ts=4:sw=4

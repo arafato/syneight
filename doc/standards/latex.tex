@@ -1,0 +1,166 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Latex}
+\label{cha:latex}
+
+Almost all \SYNEIGHT documentation is written in \LaTeX{} and then compiled
+to the appropriate format like Post Script, PDF, HTML or even plain text.
+For this reason we have to define some guidelines how to write the
+documents to maintain consistency throughout the documents.
+
+
+\section{\LaTeX{} Header}
+\label{sec:latex-header}
+
+Every \LaTeX{} file should have the following header prepended:
+
+\begin{verbatim}
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+\end{verbatim}
+
+
+\section{Standard Packages}
+\label{sec:standard-packages}
+
+The standard packages that we use throughout the \SYNEIGHT documents are
+the following:
+
+\begin{verbatim}
+\usepackage{fullpage}
+\usepackage{varioref}
+\usepackage{epic}
+\usepackage{ecltree}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{epsfig}
+\usepackage{multirow}
+\usepackage{hhline}
+\usepackage{graphicx}
+\end{verbatim}
+
+\begin{todo}
+    Describe the packages and when and where one should use them...
+\end{todo}
+
+We also have our own packages that are stored in \verb|doc/lib/syneight/|.
+These have to be included in the following way:
+
+\begin{verbatim}
+\input{syneight/include.tex}
+\end{verbatim}
+
+This include file aggregates other files located in lib that contain
+following things:
+
+\begin{description}
+    \item[lib/env.tex] This package contains predefined terms like
+        requirement, todo, task and so on. 
+
+    \item[lib/people.tex] This package contains commands mapping
+        initials to the names of the people involved in the
+        \SYNEIGHT project.
+
+    \item[lib/abbreviations.tex] This package contains commands that
+        are abbreviations of more complicated expressions like
+        macro names and often used abbreviations like \MMORG and
+        \NVE
+\end{description}
+
+
+\section{Document Structure}
+\label{sec:document-structure}
+
+All \LaTeX documents consist of one main tex file and subfiles.
+
+The main file has the name derived from the title of the document. For
+example the ``Coding Standards'' document main tex file is named
+``standards.tex''.
+
+The contents of the main file are:
+
+\begin{description}
+    \item[Document type definition] That is the first line of every
+        main document file and is in most cases 
+        \verb|\documentclass[11pt]{book}|
+
+    \item[Section depth definition] That defines the depth of the
+        section numbering. For example section number depth 2
+        would result in numbers up to two parts: 2.5 and section
+        number depth of 3 would result in three parts: 2.5.2
+
+        In most cases one should set it to
+        \verb|\setcounter{secnumdepth}{3}|
+
+    \item[Use package definition] This is a block of definitions
+        which packages to use in the document a common example
+        can be found in section \ref{sec:standard-packages}
+
+\begin{question}{what is that sloppy definition?}\end{question}
+
+    \item[Local package definition] In this block defines which
+        \SYNEIGHT project specific packages have to be included.
+        This block looks always in the same way you can find it
+        in section \ref{sec:standard-packages}
+
+\begin{question}{renewcommand ???}\end{question}
+
+\begin{question}{what is INTERFACE command definition doing here?}\end{question}
+
+    \item[Frontsite definition] 
+
+\end{description}
+
+
+\section{Modelines}
+\label{sec:latex-modelines}
+
+Append the following \emph{modelines} (per-file configuration parameters) for
+{\tt vim} and {\tt emacs} to every \LaTeX{} file:
+
+\begin{verbatim}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "foo"
+%%% tab-width: 4
+%%% End:
+
+% vim:ts=4:sw=4
+\end{verbatim}
+
+The "foo" parameter is the (double-quoted) master document a
+\LaTeX{} file belongs to (without the {\tt .tex} extension).
+E.g. if you have a {\tt foo.tex} file which
+includes {\tt bar.tex}, then you have to use "foo" as TeX-master
+in the {\tt emacs} modeline of {\tt bar.tex}.
+
+Omit the parameter for TeX-master in the master document itself, i.e.
+write 
+
+\begin{verbatim}
+%%% TeX-master:
+\end{verbatim}
+
+
+These modelines will ensure that
+
+\begin{itemize}
+\item the displayed TAB-width is 4 in both editors, and
+\item {\tt emacs} will be put into \LaTeX{} mode
+\end{itemize}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End: 
+% vim:ts=4:sw=4

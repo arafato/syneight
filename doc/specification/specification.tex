@@ -1,0 +1,74 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\documentclass[a4paper, 12pt]{book}
+
+\setcounter{secnumdepth}{3}
+
+\usepackage{fullpage}
+\usepackage{varioref}
+\usepackage{epic}
+\usepackage{ecltree}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{epsfig}
+\usepackage{hhline}
+\usepackage{multirow}
+\usepackage{hhline}
+\usepackage{graphicx}
+
+\sloppy
+
+\input{syneight/env.tex}
+\input{syneight/definedterms.tex}
+\input{syneight/abbreviations.tex}
+
+\renewcommand{\dt}[1]{#1}
+
+\newcommand{\INTERFACE}[1]{$\Rightarrow\left\{#1\right\}$}
+
+\begin{document}
+\title{\SYNEIGHTLOGO\\\vspace{1cm}Specification}
+\author{Piotr Esden-Tempski\\ Christian Schallhart}
+\catcode`\$=12
+\date{\texttt{$Id: specification.tex 1053 2005-06-07 12:14:38Z esdentem $}}
+\catcode`\$=3
+\maketitle
+\tableofcontents
+
+\newpage
+
+\part{Introduction}
+
+\include{motivation_draft}
+\include{motivation}
+\include{overview}
+\include{notation}
+
+
+\part{Application}
+
+\include{transaction_model}
+\include{object_integration}
+\include{combining_TM_and_OI}
+\include{object_activation}
+
+\part{Maintenance}
+
+\include{database_and_revisions}
+\include{processes_and_nodes}
+\include{plugins_and_plugins-configuration}
+
+\part{Behavior}
+
+\include{reliability}
+\include{balancing}
+\include{stable_storage}
+
+\end{document}
+
+% vim:ts=4:sw=4

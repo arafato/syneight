@@ -1,0 +1,4 @@
+AAL_LDFLAGS = -llog4cpp
+
+@AAL_OUTPUT@
+

@@ -1,0 +1,117 @@
+%%% paperversion.sty
+%%%
+%%% Allow easy paper version customization 
+%%% via conditional blocks of text.
+%%%
+%%% David Aspinall, 1994.
+%%%
+%%% paperversion.sty,v 1.9 2000/05/17 17:25:00 da Exp
+%%%
+%%% 
+%%% Usage:
+%%%
+%%%   \usepackage[Long,Private]{paperversion}
+%%%
+%%% Selects paper versions "Long" and "Private".  Use whatever
+%%% names you like for paper version.  Enclose conditional text 
+%%% in the paper by
+%%%
+%%%      \begin{PaperVersion}{Private} ... \end{PaperVersion}
+%%% or   \begin{NotPaperVersion}{Long} ... \end{NotPaperVersion}
+%%%
+%%% Shorter blocks using if-then-else, if-then-else or unless-then (no \par's):
+%%%
+%%%  \ifPaperVersion{Long}{long text}{not long text}
+%%%  \ifPapVer{Long}{long text}
+%%%  \ifnotPapVer{Long}{not long text}
+%%%
+%%% You can also use explicit commands to unset/set paper versions:
+%%%
+%%%    \setPaperVersion{Private}, \unsetPaperVersion{Long}
+%%%
+%%% Magical paper version "debug" puts ugly text around all blocks
+%%% to show complete source.
+%%%
+%%% Uses verbatim.sty
+%%%
+
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+
+%%% Identification prelude
+
+\def\davesRCSdef $#1${\davesRCS@def#1: {} :.}
+\def\davesRCS@def #1: #2 :#3.{\expandafter\def\csname davesRCS#1\endcsname{#2\expandafter}}
+
+%\davesRCSdef 1.9
+%\davesRCSdef 2000/05/17 17:25:00
+
+\ProvidesPackage{paperversion}
+%         [\davesRCSDate \davesRCSRevision Paperversion]
+
+%%% Macro code
+
+\def\filedate{}\def\fileversion{}\def\docdate{}  % verbatim.sty bug
+\RequirePackage{verbatim}
+
+\newcommand{\setPaperVersion}[1]{%
+  \@namedef{PV@#1}{\relax}
+  \typeout{==== Paper version `#1' selected.}}
+
+\newcommand{\unsetPaperVersion}[1]{%
+  \expandafter\let\csname PV@#1\endcsname\relax%
+  \typeout{==== Paper version `#1' unselected.}}
+
+\newcommand{\ifPaperVersion}[3]{%
+  \@ifundefined{PV@debug}%
+  {\@ifundefined{PV@#1}{#3}{#2}}%
+  {\textbf{(ifVersion `#1':}% )
+    #2%
+    \textbf{) (else if not version `#1':}% )
+    #3%
+    \textbf{end ifVersion `#1')}% )
+   }}
+
+\newcommand{\ifPapVer}[2]{%
+  \@ifundefined{PV@debug}%
+  {\@ifundefined{PV@#1}{}{#2}}%
+  {\textbf{(ifVersion `#1':}% )
+    #2%
+    \textbf{end ifVersion `#1')}% )
+   }}
+
+\newcommand{\ifnotPapVer}[2]{%
+  \@ifundefined{PV@debug}%
+  {\@ifundefined{PV@#1}{#2}{}}%
+  {\textbf{(ifNotVersion `#1':}% )
+    #2%
+    \textbf{end ifnotVersion `#1')}% )
+   }}
+
+\newenvironment{PaperVersion}[1]{%
+  \@ifundefined{PV@debug}%
+  {\@ifundefined{PV@#1}%
+    {\global\let\endPaperVersion\endcomment\comment}%
+    {\global\let\endPaperVersion\relax}}
+  {\textbf{(begin version `#1':}% )
+    \def\endPaperVersion{\textbf{end version `#1')}}}}{}
+
+\newenvironment{notPaperVersion}[1]{%
+  \@ifundefined{PV@debug}%
+  {\@ifundefined{PV@#1}%
+    {\global\let\endnotPaperVersion\relax}%
+    {\global\let\endnotPaperVersion\endcomment\comment}}%
+  {\textbf{(begin not version `#1':}% )
+    \def\endnotPaperVersion{\textbf{end not version `#1')}}}}{}
+
+\DeclareOption*{\setPaperVersion{\CurrentOption}}
+\ProcessOptions
+
+\endinput
+%%% End of paperversion.sty
+%%
+%% paperversion.sty,v
+%% Revision 1.9  2000/05/17 17:25:00  da
+%% Added new shorter blocks.
+%%
+
+

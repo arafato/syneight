@@ -1,0 +1,307 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Meeting agenda and protocol 'environment'.
+% 
+% Author: cbs
+% 
+% This is a new meeting 'environment' which replaces the old one.
+% 
+% Here is an example of a agenda/protocol in the new format:
+% 
+% ----------------------------------------
+% 
+% \input{syneight/meeting.tex}
+% 
+% \begin{document}
+% 
+% \setTitle{Sample Meeting}
+% 
+% % set further title page information (omitted in this example)
+% 
+% \meetingtitlepage
+% 
+% \agenda
+% 
+% \topic{Topic 1}{10}
+% 
+% % topic content
+% 
+% \topic{Topic 2}{15}
+% 
+% % topic content
+% 
+% \protocol
+% 
+% \topic{Topic 1}{12}
+% 
+% % topic content
+% 
+% \topic{Topic 2}{14}
+% 
+% % topic content
+% 
+% \end{document}
+% 
+% ----------------------------------------
+% 
+% I think this is a little easier to use than the previous
+% environment, since the document structure is now really simple.
+% 
+% Basically, I dropped all the "paperversion" stuff, thus removing the
+% agenda/protocol summary. If anybody found those really useful, I'm
+% sorry, but in my opinion, these are not really necessary. The agenda
+% should not be more than one or two pages long anyway, so there is no
+% real need for an extra summary, and the protocol does not need a
+% summary at all.
+% 
+% The main advantage of the new environment is, that content within
+% "topics" (formerly "issues", but the command \issue seemingly already
+% exists somewhere in latex) can be any valid latex-code (e.g. a
+% "verbatim" environment). This is because the content is no longer
+% passed as an argument to the command. The structural commands are now
+% more like "section"/"subsection" commands.
+% 
+% In contrast to the old environment, the content of topics is no longer
+% restricted to a list of 'subissues', but can be anything the author
+% wants to put there.
+% 
+% Topic headers are still numbered and contain time tracking information
+% (start, stop and duration in minutes).
+% 
+% The title page now contains only a table with general information
+% about the meeting (title, date, time, participants, ...). This
+% information is set via \setXXX commands (see below) and then displayed
+% with the \meetingtitlepage command.
+% 
+% I also added a command and environment for making notes: \note and
+% 'longnote'-environment. These should be used for information that was
+% not actually discussed during the meeting, but was added later to the
+% protocol.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[a4paper, 10pt]{article}
+
+\setcounter{secnumdepth}{3}
+
+\usepackage{fullpage}
+\usepackage{xspace}
+\usepackage{varioref}
+\usepackage{epic}
+\usepackage{ecltree}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{epsfig}
+\usepackage{hhline}
+\usepackage{multirow}
+\usepackage{hhline}
+\usepackage{calc}
+\usepackage{ifthen}
+\usepackage{graphics}
+
+\sloppy
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Counters used for topic numbering and time tracking.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcounter{counttime}
+\newcounter{counttopics}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Commands for setting title-page information
+%
+% These must be called before \meetingtitlepage is called!
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\setTitle}[1]{\def\meetingTitle{#1}}
+\newcommand{\setCallers}[1]{\def\meetingCallers{#1}}
+\newcommand{\setProposedDate}[1]{\def\meetingProposedDate{#1}}
+\newcommand{\setProposedTime}[1]{\def\meetingProposedTime{#1}}
+\newcommand{\setProposedAttendants}[1]{\def\meetingProposedAttendants{#1}}
+\newcommand{\setProposedModerator}[1]{\def\meetingProposedModerator{#1}}
+\newcommand{\setProposedProtocolWriter}[1]{\def\meetingProposedProtocolWriter{#1}}
+\newcommand{\setDate}[1]{\def\meetingDate{#1}}
+\newcommand{\setTime}[1]{\def\meetingTime{#1}}
+\newcommand{\setAttendants}[1]{\def\meetingAttendants{#1}}
+\newcommand{\setModerator}[1]{\def\meetingModerator{#1}}
+\newcommand{\setProtocolWriter}[1]{\def\meetingProtocolWriter{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Command \heading{title} ... internal
+%
+% This is used to generate a section heading (on the titlepage and at the
+% beginnings of the agenda and protocol).
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\heading}[1]{%
+  \begin{center}%
+  {\Large \bf #1}%
+  \end{center}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Command \meetingtitlepage
+%
+% Generates the title-page, which contains the information set with the
+% commands above.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\meetingtitlepage}{%
+  \heading{Meeting: \meetingTitle}%
+  \bigskip%
+  \begin{tabular}{|p{30mm}|p{120mm}|} \hline%
+    Callers         & \meetingCallers                \\ \hline%
+  \end{tabular}%
+  \bigskip\\%
+  {\bf Proposed:}%
+  \smallskip\\%
+  \begin{tabular}{|p{30mm}|p{120mm}|} \hline%
+    Date            & \meetingProposedDate           \\ \hline%
+    Time            & \meetingProposedTime           \\ \hline%
+    Participants    & \meetingProposedAttendants     \\ \hline%
+    Moderator       & \meetingProposedModerator      \\ \hline%
+    Protocol Writer & \meetingProposedProtocolWriter \\ \hline%
+  \end{tabular}%
+  \bigskip\\%
+  {\bf Actual:}%
+  \smallskip\\%
+  \begin{tabular}{|p{30mm}|p{120mm}|} \hline%
+    Date            & \meetingDate                   \\ \hline%
+    Time            & \meetingTime                   \\ \hline%
+    Participants    & \meetingAttendants             \\ \hline%
+    Moderator       & \meetingModerator              \\ \hline%
+    Protocol Writer & \meetingProtocolWriter         \\ \hline%
+  \end{tabular}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Command \newsection{title} ... internal
+%
+% Used to start a new section (agenda or protocol).
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\newsection}[1]{%
+  \newpage%
+  \setcounter{counttime}{0}%
+  \setcounter{counttopics}{1}%
+  \heading{#1}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Command \agenda
+%
+% Starts the 'Agenda' section.
+%
+% All topic counters are reset.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\agenda}{%
+  \newsection{Agenda}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Command \protocol
+%
+% Starts the 'Protocol' section.
+%
+% All topic counters are reset.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\protocol}{%
+  \newsection{Protocol}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Command \topic{title}{duration}
+%
+% Starts a new topic.
+%
+% Arguments:
+%
+%   title    ... the topic title
+%   duration ... the duration in minutes (projected duration for agenda, 
+%                actual duration for protocol).
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\topic}[2]{%
+  \bigskip%
+  \noindent%
+  \begin{tabular}{|p{7mm}|p{110mm}|p{35mm}|}%
+  \hline%
+  \hfill\thecounttopics & \textbf{#1} & \hfill #2 min (\thecounttime\addtocounter{counttime}{#2}--\thecounttime)%
+  \\%
+  \hline%
+  \end{tabular}%
+  \medskip%
+  \addtocounter{counttopics}{1}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Note commands:
+%
+%   \note{user}{text}
+%
+%   \begin{longnote}{user}
+%      % text
+%   \end{longnote}
+%
+% These should be used to add information to the protocol that was _not_
+% discussed during the meeting (e.g. additional information or notions added
+% by the protocol writer or a reviewer).
+%
+% Use \note for short (one sentence) notes and longnote-environment for
+% longer notes (this creates a quote-environment around the note's content).
+%
+% Arguments:
+%
+%   user ... the name of the user that added the note.
+%   text ... the note's content.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\note}[2]{%
+  [{\bf Note by #1:} #2]%
+}
+
+\newenvironment{longnote}[1]{%
+  {\bf Note by #1:}%
+  \begin{quote}%
+}{%
+  \end{quote}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Include standard files
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{syneight/people.tex}
+\input{syneight/abbreviations.tex}
+
+% vim:ts=4:sw=4

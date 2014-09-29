@@ -1,0 +1,571 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Development Rules}
+\label{cha:development-rules}
+
+The Development Rules for \SYNEIGHT are assimilated from the book
+\emph{Large Scale C++ Software Design} by John Lakos.
+We will present these rules without any explanation. If any rule
+needed further information for the reader, one can read the previously
+mentioned book.
+
+\section{Accessibility}
+\label{sec:accessibility}
+
+\begin{guideline*}{Data Members should be Private}
+  Keep class data members private.
+\end{guideline*}
+%
+So when is it allowed to keep class data members protected or public?
+When you define a class which is only intended for component internal
+use.  Such a class must be in an internal namespace. Mostly, such
+classes will appear in cpp files or in impl.hpp files of complex
+template classes. Rephrased, we get the following rule:
+%
+\begin{rule*}{Classes Public Data Members} 
+  If a class has non-private data members, it must be private to a
+  component.
+\end{rule*}
+
+
+\section{Where to Place What}
+\label{sec:where-place-what}
+
+\begin{rule*}{External Linkage: Data}
+  Avoid data with external linkage at file scope.
+\end{rule*}
+%
+To clarify, this means, that you should not declare any global
+variable. If you feel the need for some global data, encapsulate into
+a singleton or a facility. 
+
+\begin{rule*}{Free Functions: External Linkage}
+  Avoid free functions (except operator functions) at file scope in .hpp
+  files; avoid free functions with external linkage (including operator
+  functions) in .cpp files.
+\end{rule*}
+%
+What is a free function? A function not part of a class. File Scope is
+the global scope, i.e., the space outside any namespace. Inside a
+namespace, you are allowed to define a free function, \textbf{but} you
+must use an appropriate entry in a corresponding header file. 
+%
+
+To enforce internal linkage, you can place entities in the
+\textbf{unnamed} namespace, i.e., {\tt namespace \{ ... \}}. 
+
+\begin{rule*}{Unnamed Namespace in cpp-files only}
+  The unnamed namespace is only allowed to appear in cpp-files. 
+\end{rule*}
+
+\begin{rule*}{}
+  Avoid enumerations, typedefs, and constants at file scope in .hpp
+  files -- consequently, if you need them in a hpp file, place them
+  either in a namespace, or \textbf{much} better place them within a
+  class.
+\end{rule*}
+
+
+\begin{rule*}{Definition \& Declaration: Where to place}
+  Only classes (also templated), structures, unions, and free operator
+  functions (also templated) should be \textbf{declared} at file scope
+  in a .hpp file; only classes, structures, and unions should be
+  \textbf{defined} at file scope in a .hpp file. 
+  
+  Non-inline Template functions (member functions of template classes)
+  should be \textbf{defined} in a .impl.hpp file.
+  %
+  Inlined functions (template or not) should be \textbf{defined} in a
+  .hpp file.
+  
+  See rule \vref{rule:files-component} for details on the files of a
+  component.
+\end{rule*}
+%
+A definition defines an entity, a declaration is only stating that
+such and such an entity exists. For example, a function declaration
+{\tt int func()} declares a function named {\tt func} taking no
+arguments and returning an {\tt int}.\footnote{Plain C allowed to
+  declare functions without any signature, i.e., without specifying
+  the return value and the arguments the function will take. An
+  invitation for long debugging sessions.} A corresponding definition
+would be {\tt int func() \{ return 42; \}}. For details, check out 
+``Large-Scale C++ Software Design''. 
+% LAKOS
+
+\begin{rule*}{Include Guards}
+  Place a unique and predictable (internal) include guard around the
+  contents of each header file. See section \vref{sec:include-guards}
+  for details.
+\end{rule*}
+
+\begin{rule*}{Accessing Externally Linked Entities}
+  Avoid accessing a definition with external linkage in another
+  component via a local declaration; instead, include the .hpp file for
+  that component.
+\end{rule*}
+%
+Rephrased, this rule says, that you should not emulate the .hpp by
+just writing the declarations you need directly. 
+
+
+\section{Dependencies}
+\label{sec:dependencies}
+
+\begin{rule*}{Cyclic Dependences}
+  Avoid cyclic dependencies among packages, components or other source
+  units (such as libraries).
+\end{rule*}
+%
+Nothing is worse than cyclic dependencies. Cycles make software
+unmaintainable. \textbf{Never!} If you have a cycle and you do not
+know how to resolve the cycle, tell me.  
+
+\begin{rule*}{}
+  Avoid cyclic physical dependencies among components.
+\end{rule*}
+
+
+\section{Special Rights of {\tt main}-Component}
+\label{sec:special-rights-tt}
+
+\begin{rule*}{New \& Delete}
+  Only the .cpp file that defines \texttt{main} is authorized to
+  redefine global new and delete.
+\end{rule*}
+%
+We define debugging new \& delete operators in special include files
+which are included through {\tt syneight/base/config/unittest.hpp}.
+This file is only allowed to be included in a .t.cpp file, i.e., in a
+file that actually contains a {\tt main}.
+
+
+\section{Clean Shutdown}
+\label{sec:clean-shutdown}
+
+\begin{guideline*}{Free Memory allocated by Static Entities}
+  Provide a mechanism for freeing any dynamic memory allocated to static
+  constructs within a component.
+\end{guideline*}
+%
+Whenever possible. The problem associated with not freeing static
+memory is that you cannot use tools like purify to check the memory
+behavior of the application. We will use our own framework for memory
+testing, thus we can deal with some of the problems associated with
+not freeing statically maintained memory.  Still, for the sake of
+clarity and cleanness, you should free your statically maintained
+memory. One way to do so is the {\tt ::std::atexit} construct (check
+it out, if you do not know what it is). 
+%
+An example of static entity that might retain its allocated memory is
+a memory management: If it free its memory, some other static entity
+might produce a segmentation fault. 
+
+We will have build our own {\tt Lifetime\_Management} (and a {\tt
+  Base\_Lifetime\_Management} for {\tt syneight/base}) class which
+takes care of shutting down our static entities. 
+
+
+\section{Naming Convention}
+\label{sec:naming-convention}
+
+
+\begin{rule*}{Marking Member Files, Protected \& Private Fields}
+  Use a \texttt{m\_} prefix to highlight member fields. Use a
+  \texttt{p\_} prefix to highlight protected methods and a \texttt{P\_}
+  prefix to highlight private methods.
+\end{rule*}
+
+\begin{rule*}{Class Names}
+  Use uppercase words separated by underscores for class names (i.e.
+  Class\_XYZ).
+  Use an additional \texttt{\_t} postfix to distinguish type names (i.e.
+  Type\_XYZ\_t).
+\end{rule*}
+
+\begin{rule*}{Enums, Constants \& Preprocessor}
+  Use all caps to identify immutable values such as enumerators, const
+  data and preprocessor constants (see chapter \vref{cha:macros} for
+  our macro rules).
+\end{rule*}
+
+\begin{guideline*}{}
+  Functions that answer a yes-or-no question should be named in an
+  appropriate way (i.e. {\tt is\_valid}, {\tt has\_value}). Also a
+  public {\tt int abstract\_state} can be used to define a bit
+  pattern.
+\end{guideline*}
+
+
+\section{Arguments}
+\label{sec:arguments}
+
+\begin{rule*}{Passing User Defined Types}
+  Never pass a user-defined type (i.e. class, struct, or union) to a
+  function by value.
+\end{rule*}
+
+%% \begin{guideline*}{Passing PODs to Non-Inlined Functions}
+%%   Avoid declaring parameters passed by value to a function as const --
+%%   if the function is non-inline.
+%% \end{guideline*}
+
+\begin{guideline*}{Passing PODs}
+  Plain old data (POD) such as {\tt int} should be passed as {\tt
+  const} if possible. 
+\end{guideline*}
+
+\begin{guideline*}{}
+  Avoid storing the address of any argument to a function in a location
+  that will persist after the function terminates; pass the address of
+  the arguments instead.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Whenever a parameter passes its argument by reference or pointer to a
+  function in a location that neither modifies that argument nor stores
+  its writable address, that parameter should be declared const.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Be consistent about returning values through arguments (e.g., avoid
+  declaring non-const reference parameters).
+\end{guideline*}
+
+\section{Casting}
+\label{sec:casting}
+
+The old story -- avoid casts:
+\begin{guideline*}{}
+  Consider avoiding "cast" operators, especially to fundamental integral
+  types; instead make the conversion explicit.
+\end{guideline*}
+
+
+\begin{rule*}{C-Cast}
+  \textbf{Never!} Having said this, a C-cast is statement such as {\tt
+    (Cat*) mouse}. Use the C++-casts ({\tt static\_cast}, {\tt
+    dynamic\_cast}, {\tt const\_cast}, and {\tt
+    reinterpret\_cast}). 
+\end{rule*}
+%
+If you do not know them, read their definition. A common
+misunderstanding is that the C-cast and {\tt static\_cast} are the
+same. In fact, they are used in comparable situations, but they
+\textbf{are not the same}. Classes need (sometimes) special treatment,
+and {\tt static\_cast} provides this special treatment.
+
+If you do not understand {\tt reinterpret\_cast} after reading about
+it, do not care too much -- since
+\begin{rule*}{{\tt reinterpret\_cast}}
+  Do not use it! If you have to cast from type {\tt X*} to type {\tt
+    Y*} and these types are not related to each other in any way (thus
+  {\tt static\_cast} and {\tt dynamic\_cast} are not usable directly),
+  use {\tt static\_cast<X*>(static\_cast<void*>(y))} where {\tt y} is
+  of type {\tt Y*}.
+  
+  And -- \textbf{avoid the above construct}. It is only to be used in
+  well defined situations where you want to hide a type. 
+\end{rule*}
+
+\begin{rule*}{}
+  Think twice before casting away {\tt const} (using {\tt const\_cast}).
+\end{rule*}
+%
+Casting away a {\tt const} might cause long debugging hours -- since
+\begin{itemize}
+\item you broke the contract of some interface, and some other
+  component might become angry about this disobedience,
+\item you might cause a situation where the compiler is allowed to
+  behave arbitrarily -- have fun finding the bug. Even worse, such a
+  situation might arise a long time after the casting code has been
+  written, when some other change is done.
+\end{itemize}
+
+\section{Return Values}
+\label{sec:return-values}
+
+\begin{rule*}{Error Code}
+  For functions that return an error status, an integral value of 0
+  should always mean success.
+\end{rule*}
+
+\begin{rule*}{{\tt const} Return}
+  Avoid declaring results returned by value from functions as {\tt
+    const} (to clarify: this rule does not apply to {\tt const \&}).
+\end{rule*}
+
+
+\section{Default Values}
+\label{sec:default-values}
+
+\begin{rule*}{Default Values and {\tt virtual} functions}
+  Avoid default arguments that require the construction of an unnamed
+  temporary object in virtual functions.
+\end{rule*}
+%
+The above rule can be simplified to:
+%
+\begin{rule*}{Do not use default values}
+  Do not use default values. 
+\end{rule*}
+%
+Default values such as {\tt int foo(int const bla=5)} appear to be elegant. But
+they come with a lot of problems if you leave the level of small scale
+projects: Having the line {\tt int foo(int const bla=5)} in an interface means
+that 
+\begin{itemize}
+\item 5 is the default until you change the interface. If 5 is just
+  some suitable value (e.g., for an initial buffer size), this might
+  not be too drastic. But if 5 causes some special behavior (think
+  about {\tt NULL} default arguments), then committed to the constant
+  5 as a special value.
+\item You cannot choose another implementation for the signature {\tt
+    int foo()}. This case is more serious. Often, during development
+    you find out that a default value might be helpful, to avoid
+    writing too long source lines. Then you want to optimize the case,
+    and you have to break the interface.
+\end{itemize}
+%
+So what to do? Use {\tt int foo(int const bla); int foo()}. In the
+implementation of {\tt int foo()}, you can still call {\tt int
+  foo(5)}. If that is too slow, a specific implementation might be
+necessary anyhow.
+
+A final remark: If you use some function defined as {\tt int foo(int
+  const bla=5)} and call it with {\tt foo}, then the 5 is substituted
+at the place \emph{where you call} the function. The called function
+knows nothing about being called with a default argument (thus if the
+function definition is identical to its declaration, the definition is
+not allowed to contain a default value).
+
+
+\section{Constructors, Destructors, \& Assignments}
+\label{sec:constr-destr-}
+
+\begin{rule*}{Constructor \& Assignment}
+  Explicitly declare (either public or private) the constructor and
+  assignment operator for any class defined in a header file, even when
+  the default implementations are adequate. Only exception: A class
+  without fields.
+\end{rule*}
+
+\begin{guideline*}{Explicit Copy Constructor}
+  If you define a copy constructor (a constructor which takes one
+  argument), then use the {\tt explicit} keyword if you want to avoid
+  an implicit conversion. 
+\end{guideline*}
+%
+If you do not understand the above rule, check out the {\tt explicit} keyword.
+
+\begin{rule*}{Virtual Destructor}
+  In every class that declares or is derived from a class that declares
+  a virtual function, explicitly declare the destructor as the first
+  virtual function in the class and define it out of line.
+\end{rule*}
+
+\begin{rule*}{Non-Virtual Destructor}
+  In classes that do not otherwise declare virtual functions, explicitly
+  declare the destructor as non-virtual and define it appropriately
+  (either inline or out-of-line). 
+\end{rule*}
+
+\begin{guideline*}{}
+  Åvoid depending on the order in which data members are defined in an
+  object during initialization.
+\end{guideline*}
+
+
+
+\section{Friendship}
+\label{sec:friendship}
+
+
+\begin{rule*}{}
+  Avoid granting (long-distance, i.e., to some entity defined in some
+  other component) friendship to a logical entity defined in another
+  component.
+\end{rule*}
+
+\begin{guideline*}{}
+  Avoid granting friendship to individual functions.
+\end{guideline*}
+
+\section{Document, be Explicit, be Consistent}
+\label{sec:document-be-explicit}
+
+\begin{rule*}{}
+  Document the interfaces so that they are usable by others; have at
+  least one other developer review each interface.
+\end{rule*}
+
+
+\begin{rule*}{}
+  Explicitly state conditions under which behavior is undefined.
+\end{rule*}
+
+Some other rules, which are not in the scope of the book, should be
+mentioned:
+
+\begin{rule*}{Throw declarations}
+  Never use the throw statement in declarations or definitions. Rather
+  write a comment naming the expected exceptions. If a external
+  parent class should define an empty throw() (mostly the case in
+  standard exceptions), use the Macro
+  \texttt{SYNEIGHT\_\_SWITCH\_\_EXCEPTION\_NO\_THROW} to implement it.
+\end{rule*}
+
+
+\begin{rule*}{}
+  Be consistent.
+\end{rule*}
+
+\begin{rule*}{}
+  Be consistent about names used in the same way. This will develop
+  during the expansion of the project.
+\end{rule*}
+
+
+\section{{\tt const}}
+\label{sec:tt-const}
+
+\begin{guideline*}{Use {\tt const}}
+  Whenever it makes sense, use {\tt const}. It helps the compiler to
+  optimize and it helps the developer to understand the code -- and it
+  helps to avoid errors. 
+\end{guideline*}
+
+\begin{guideline*}{}
+  Every object in a system should be const-correct. A system should be
+  const-correct.
+\end{guideline*}
+%
+That means that the following rule is satisfied by every object and
+thus by the whole system.
+
+\begin{rule*}{}
+  The result of calling a const member function should not alter any
+  programmatically accessible value in the object.
+\end{rule*}
+%
+If you read this, and you do not know, what it means, then check out
+the keyword {\tt mutable}. 
+
+
+
+
+\section{Misc}
+\label{sec:misc}
+
+
+\begin{rule*}{}
+  Prefer object-specific over class-specific memory management.
+\end{rule*}
+%
+In other words, avoid overwriting {\tt new} and {\tt delete} of a
+class. 
+
+\begin{guideline*}{}
+  Clients should include header files providing required type definitions
+  directly; except for non-private inheritance, avoid relying on one
+  header file to include another.
+\end{guideline*}
+
+\begin{rule*}{}
+  Never attempt to delete an object passed by reference. Never use
+  pointer arithmetic to a reference.
+\end{rule*}
+
+\begin{rule*}{}
+  When implementing memory management for a general, parameterized
+  container template, be careful \textbf{not} to use the assignment
+  operator of the contained type when the target of the assignment is
+  uninitialized memory.
+\end{rule*}
+
+\begin{guideline*}{}
+  When implementing memory management for a completely
+  general, parameterized container that manages the memory for its
+  contained objects, assume that the parameterized type defines a copy
+  constructor and a destructor - nothing more.
+\end{guideline*}
+
+
+\begin{rule*}{}
+  Avoid hiding a base-class function in a derived class.
+\end{rule*}
+
+\begin{guideline*}{}
+  The semantics of an overloaded operator should be natural, obvious,
+  and intuitive to clients. The syntactic properties of overloaded
+  operators for user-defined types should mirror the properties already
+  defined for the fundamental types.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Avoid using short, unsigned or long in the interface; use int instead.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Use double exclusively for floating-point operations. Use float only
+  for performance reasons.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Where possible, implement templates on top of a factored reusable
+  void * pointer type using inline functions to reestablish type safety.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Avoid allowing programmatic access to physical values.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Consider not using unsigned even in the implementation.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Avoid using preprocessor macros in header files except as include
+  guards.
+\end{guideline*}
+
+%% \begin{guideline*}{}
+%%   Clients should include header fies providing required type definitions
+%%   directly; except for non-private inheritance, avoid relying on one
+%%   header file to include another.
+%% \end{guideline*}
+
+\begin{guideline*}{}
+  A component x should include \texttt{y.hpp} only if x makes direct
+  substantive use of a class or free operator function defined in y.
+  Exception: use-case includes.
+\end{guideline*}
+
+\begin{guideline*}{}
+  In general, avoid granting one component license that, if also taken
+  by other components, would adversely impact the system as a whole.
+\end{guideline*}
+
+\begin{guideline*}{}
+  Prefer modules to non-local static instances of objects, especially
+  when:\begin{itemize}
+    \item {Direct access to the construct is needed outside a
+        translation unit.}
+        \item{The construct may not be needed during start-up or immediately
+        thereafter and the time to initialize the construct itself is
+        significant.}
+  \end{itemize}
+\end{guideline*}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End:
+% vim:ts=4:sw=4

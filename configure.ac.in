@@ -1,0 +1,352 @@
+dnl ---------------------------------------------------------------------------
+dnl Syneight - A soft-realtime transaction monitor
+dnl Copyright (C) 2003-2004 The Syneight Group
+dnl
+dnl TODO: License.
+dnl ---------------------------------------------------------------------------
+
+dnl Process this file with autoconf to produce a configure script.
+
+dnl ---------------------------------------------------------------------------
+dnl Generic initialization settings.
+dnl ---------------------------------------------------------------------------
+
+dnl Ensure that a recent enough version of Autoconf is being used.
+AC_PREREQ(2.57)
+
+dnl Process any command-line arguments and perform various initializations
+dnl and verifications.
+dnl The input parameters are: Full package name, version, email-address for
+dnl bug-reports and the base name for the *.tar.gz distribution file.
+dnl Defines the output variables PACKAGE_NAME, PACKAGE_TARNAME,
+dnl PACKAGE_VERSION, PACKAGE_STRING and PACKAGE_BUGREPORT.
+AC_INIT([Syneight], [0.1], [syneight-devel@syneight.informatik.tu-muenchen.de],
+        [syneight])
+
+dnl State that, in addition to the Free Software Foundation's copyright on
+dnl the Autoconf macros, parts of our 'configure' script are covered by the
+dnl following copyright notice. Appears in 'configure' and 'configure --version'.
+AC_COPYRIGHT([Copyright (C) 2003-2004 The Syneight Group])
+
+dnl This lets us put a revision stamp from 'configure.ac' into 'configure'
+dnl without RCS or CVS changing it when (if at all) we check in 'configure'.
+dnl Thus we can determine easily which revision of 'configure.ac' a particular
+dnl 'configure' script corresponds to.
+dnl TODO: Do we really need this? Probably not...
+AC_REVISION($Revision: 0.1$)
+
+dnl 'configure' checks for this file's existence to make sure that the
+dnl directory that it's told contains the source code in fact does.
+dnl Occasionally people might specify the wrong directory with '--srcdir'.
+dnl This is a safety check.
+AC_CONFIG_SRCDIR([configure.ac])
+
+dnl The name of the file where all automatically generated #defines are stored.
+dnl Note: This *should* be M4-quoted, but older autoconf versions have
+dnl problems with that.
+AM_CONFIG_HEADER(syneight/base/root/bits/config.h)
+
+dnl ...
+AH_TOP([#ifndef CONFIG_H
+#define CONFIG_H     /* Prevent multiple inclusions. */])
+
+dnl ...
+AH_BOTTOM([#endif])
+
+dnl ...
+dnl AC_CONFIG_AUX_DIR(autoscripts)
+
+dnl Initialize Automake with the following options.
+dnl  * 1.7:        We require at least Automake 1.7.
+dnl  * foreign:    Only check for absolutely required things, not all the
+dnl                standard GNU stuff.
+dnl  * check-news: Cause 'make dist' to fail unless the current version number
+dnl                appears in the first few lines of the 'NEWS' file.
+dnl  * dist-bzip2: Generate a 'dist-bzip2' target, which creates a tar.bz2
+dnl                tarball in addition to the usual tar.gz.
+dnl  * -Wall:      Enable all Automake warnings, e.g. about obsolete or
+dnl                unsupported features, portability issues, syntax errors etc.
+dnl                Do not confuse this with the compiler option -Wall.
+dnl
+dnl Note: All these options are applied globally to all processed 'Makefiles'.
+dnl       If you want to set options for a specific Makefile, use the variable
+dnl       AUTOMAKE_OPTIONS in the respective Makefile.am.
+dnl AM_INIT_AUTOMAKE([1.7 foreign check-news dist-bzip2 -Wall])
+AM_INIT_AUTOMAKE([1.7 foreign check-news dist-bzip2])
+
+dnl ...
+dnl AM_MAINTAINER_MODE
+
+
+dnl ---------------------------------------------------------------------------
+dnl OS-specific checks.
+dnl ---------------------------------------------------------------------------
+
+dnl Define '_ALL_SOURCE' on AIX, which allows the use of some BSD functions.
+AC_AIX
+
+dnl Define '_GNU_SOURCE' if we use the GNU C library. This allows the use
+dnl of some GNU functions.
+AC_GNU_SOURCE
+
+dnl Define '_MINIX' and '_POSIX_SOURCE' and define '_POSIX_1_SOURCE' to be 2.
+dnl This allows the use of POSIX functions on Minix.
+AC_MINIX
+
+
+dnl ---------------------------------------------------------------------------
+dnl Libtool initialization.
+dnl ---------------------------------------------------------------------------
+
+dnl ...
+dnl This macro must be called *before* 'AC_PROG_LIBTOOL'.
+AC_LIBTOOL_DLOPEN
+
+dnl ...
+AC_PROG_LIBTOOL
+
+
+dnl ---------------------------------------------------------------------------
+dnl Checks for programs.
+dnl ---------------------------------------------------------------------------
+
+dnl Determine a C++ compiler to use.
+dnl Sets the output variables 'CXX' and 'CXXFLAGS'.
+AC_PROG_CXX
+
+dnl Sets the output variable 'CXXCPP' to a command that runs
+dnl the C++ preprocessor.
+AC_PROG_CXXCPP
+
+dnl Check for a C compiler.
+AC_PROG_CC
+
+dnl Sets the output variable 'CPP' to a command that runs the C preprocessor.
+AC_PROG_CPP
+
+dnl Define the output variable SET_MAKE.
+dnl This is needed, e.g. to allow us to use SUBDIRS in Makefile.am's.
+AC_PROG_MAKE_SET
+
+dnl ...
+AC_PROG_INSTALL
+
+dnl ...
+AC_PROG_LN_S
+
+dnl ...
+AC_PATH_PROG([LATEX], latex, no)
+dnl if test "$LATEX" = "no"; then
+dnl   AC_MSG_ERROR(Could not find the 'latex' program)
+dnl fi
+
+dnl ...
+AC_PATH_PROG([PDFLATEX], pdflatex, no)
+
+dnl ...
+AC_PATH_PROG([DVIPS], dvips, no)
+
+dnl ...
+AC_PATH_PROG([MAKEINDEX], makeindex, no)
+
+dnl ...
+AC_PATH_PROG([BIBTEX], bibtex, no)
+
+dnl ...
+AC_PATH_PROG([PSNUP], psnup, no)
+
+dnl ...
+AC_PATH_PROG([A2PS], a2ps, no)
+
+dnl Check for Doxygen.
+BB_ENABLE_DOXYGEN
+
+# Perl.
+AC_PATH_PROGS([PERL], perl perl5, no)
+
+
+dnl ---------------------------------------------------------------------------
+dnl Checks for libraries.
+dnl ---------------------------------------------------------------------------
+
+dnl FIXME: Replace 'main' with a function in '-lm':
+dnl AC_CHECK_LIB([m], [main])
+
+dnl Check for Boost.
+AX_PATH_BOOST([102900], , [
+  AC_MSG_ERROR([Couldn't find Boost! Please get it from http://www.boost.org.])
+])
+
+
+dnl ---------------------------------------------------------------------------
+dnl Checks for header files.
+dnl ---------------------------------------------------------------------------
+
+dnl AC_HEADER_STDC
+dnl AC_HEADER_SYS_WAIT
+dnl AC_CHECK_HEADERS([stdlib.h string.h strings.h unistd.h])
+
+
+dnl ---------------------------------------------------------------------------
+dnl Checks for typedefs, structures, and compiler characteristics.
+dnl ---------------------------------------------------------------------------
+
+dnl AC_C_CONST
+dnl AC_C_INLINE
+dnl AC_TYPE_PID_T
+dnl AC_TYPE_SIZE_T
+dnl AC_CHECK_DECLS([sys_siglist])
+dnl AC_C_VOLATILE
+
+
+dnl ---------------------------------------------------------------------------
+dnl Checks for library functions.
+dnl ---------------------------------------------------------------------------
+
+dnl AC_FUNC_VPRINTF
+dnl AC_FUNC_ERROR_AT_LINE
+dnl AC_FUNC_FORK
+dnl AC_FUNC_MALLOC
+dnl AC_FUNC_REALLOC
+dnl AC_TYPE_SIGNAL
+dnl AC_CHECK_FUNCS([bzero memset])
+
+
+dnl ---------------------------------------------------------------------------
+dnl ...
+dnl ---------------------------------------------------------------------------
+
+dnl (Compiler) Debugging Level.
+AC_ARG_ENABLE(debug, AC_HELP_STRING([--disable-debug],
+                                    [turn off debugging [[default=on]]]), ,
+              enable_debug=yes)
+
+dnl First clear CFLAGS and CXXFLAGS. We set them ourselves.
+CFLAGS=
+CXXFLAGS=
+
+dnl Add compiler options to CFLAGS and CXXFLAGS, depending on the
+dnl debugging level and the compiler used.
+if test "x$enable_debug" = "xyes"; then
+  if test "x$GCC" = "xyes"; then
+    CFLAGS="$CFLAGS -g -Wall -pedantic -ansi"
+    CXXFLAGS="$CXXFLAGS -g -Wall -pedantic -ansi"
+  else
+    CFLAGS="$CFLAGS -Wall"
+    CXXFLAGS="$CXXFLAGS -Wall"
+  fi
+else
+  if test "x$GCC" = "xyes"; then
+    CFLAGS="$CFLAGS -Wall -pedantic -ansi -O2"
+    CXXFLAGS="$CXXFLAGS -Wall -pedantic -ansi -O2"
+  else
+    CFLAGS="$CFLAGS -Wall -O2"
+    CXXFLAGS="$CXXFLAGS -Wall -O2"
+  fi
+fi
+
+
+dnl Build Level.
+AC_ARG_ENABLE([build-level],
+              AC_HELP_STRING([--enable-build-level=LEVEL], [choose the build level (LEVEL can be audit, debug, binary or off) [[default=audit]]]),
+              build_level_string="$enableval", build_level_string=audit)
+
+if test "x$build_level_string" = xoff; then
+  build_level=-1
+elif test "x$build_level_string" = xno; then
+  build_level=-1
+  build_level_string=off
+elif test "x$build_level_string" = xbinary; then
+  build_level=0
+elif test "x$build_level_string" = xdebug; then
+  build_level=1
+elif test "x$build_level_string" = xaudit; then
+  build_level=2
+else
+  AC_MSG_ERROR([--enable-build-level must be audit, debug, binary or off!])
+fi
+
+dnl Pass SYNEIGHT__SWITCH__BUILD_LEVEL to the preprocessor. We do *not*
+dnl AC_DEFINE_UNQUOTED this (which would create an entry in config.h),
+dnl because we want to install our config.h, but we still want to be able
+dnl to switch the build level for each sub-library independently. So we pass
+dnl the build level to the preprocessor directly.
+CFLAGS="$CFLAGS -DSYNEIGHT__SWITCH__BUILD_LEVEL=$build_level"
+CXXFLAGS="$CXXFLAGS -DSYNEIGHT__SWITCH__BUILD_LEVEL=$build_level"
+
+
+dnl ---------------------------------------------------------------------------
+dnl Generate output files.
+dnl ---------------------------------------------------------------------------
+
+dnl List all files which 'configure' should generate.
+AC_CONFIG_FILES([
+Makefile
+__SYNEIGHT_MAKEFILES__
+doc/Makefile
+doc/feasibility-study/Makefile
+doc/lib/Makefile
+doc/lib/syneight/Makefile
+doc/requirements/Makefile
+doc/specification/Makefile
+doc/specification/image/Makefile
+doc/standards/Makefile
+doc/tools/Makefile
+doc/api/Makefile
+doc/api/syneight/Makefile
+doc/api/test/Makefile
+doc/api/test/mazegame/Makefile
+m4/Makefile
+tool/Makefile
+doc/api/lib/doxygen-lib.conf
+doc/api/lib.ts/doxygen-ts.conf
+doc/api/lib.t/doxygen-t.conf
+])
+
+dnl Write output files.
+AC_OUTPUT
+
+
+dnl ---------------------------------------------------------------------------
+dnl Print some configuration information.
+dnl ---------------------------------------------------------------------------
+
+enabled_features=""
+disabled_features=""
+
+if test "x$DOXYGEN" != x; then
+  enabled_features="$enabled_features Doxygen"
+else
+  disabled_features="$disabled_features Doxygen"
+fi
+
+if test "x$BOOST_FOUND" = xyes; then
+  enabled_features="$enabled_features Boost"
+else
+  disabled_features="$disabled_features Boost"
+fi
+
+
+cat <<EOF
+
+Syneight $VERSION configuration successfully completed.
+
+Build level ........................ : $build_level_string
+Host ............................... : $host
+
+C compiler / preprocessor .......... : $CC / $CPP
+C++ compiler / preprocessor ........ : $CXX / $CXXCPP
+CFLAGS ............................. : $CFLAGS
+CXXFLAGS ........................... : $CXXFLAGS
+CPPFLAGS ........................... : $CPPFLAGS
+LD ................................. : $LD
+LDFLAGS ............................ : $LDFLAGS
+
+Source code location ............... : $srcdir
+Install directory prefix ........... : $prefix
+
+Enabled: ........................... :$enabled_features
+Disabled: .......................... :$disabled_features
+
+EOF
+

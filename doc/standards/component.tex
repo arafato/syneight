@@ -1,0 +1,240 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Components}
+\label{cha:components}
+
+
+\TODO{The notion of an Interface -- a component can contain classes,
+  references, macros etc. Note that somewhere. These items can be part
+  of the interface or declared to be internal. Note that too.}
+
+\section{What is a Component?}
+\label{sec:what-is-a-component}
+
+We will try to hold the content of a component in a very tight context.
+Therefore we regard one class per component as optimum.
+%
+\begin{definition*}{Component}
+  \label{def:component}
+  A component is code, atomistic in reuse, files and interface. This means,
+  you should not be able to reasonable split the code without losing those
+  values.
+\end{definition*}
+
+\begin{definition*}{Contents of a Component}
+  \label{def:contents-component}
+  A Component contains any type of coherent and cohesive code, such as classes,
+  references, macros, etc. This can also imply the use of more than one type.
+\end{definition*}
+%
+The main task of a component is to section the code into contextual parts which
+can be separated easily from the \SYNEIGHT code.
+%
+\begin{rule*}{Components are reusable}
+  \label{rule:components-portable}
+  A Component is independent enough to be separated from the higher context it
+  stands in and to be used anywhere, even in another project. This
+  reusability may not extend to requirements or dependencies such as virtual
+  classes.
+\end{rule*}
+
+\section{Files of a Component}
+\label{sec:files-component}
+
+We will use three files in a Component (subsequently called
+\texttt{component}), a C++ Header file, a C++ implementation file and a test
+suite for the component.
+%
+A fourth file may prove necessary due to the fact that C++ templates might get
+compiled each time they are \texttt{\#include}d, whether they are used or not.
+
+\begin{rule*}{Files of a Component}
+  \label{rule:files-component}
+  A component consists generally of 3 files, a 4th file is mandatory if
+  templates are used.
+  
+  \begin{itemize}
+    \item {\texttt{component.hpp} - Interface}
+    \item {\texttt{component.impl.hpp} - Template Implementation \textit{(if needed)}}
+    \item {\texttt{component.cpp} - Implementation}
+    \item {\texttt{component.t.cpp} - Unittest}
+  \end{itemize}
+  %
+  This order also declares the file hierarchy, whereas deeper in the hierarchy
+  means down in the above list.
+\end{rule*}
+%
+\subsection{Relationships between the files of a Component }
+\label{sec:relat-betw-files}
+
+\subsubsection{Global Files}
+\label{sec:global-files}
+
+\begin{definition*}{Global Configuration File}
+  \label{def:global-config-file}
+  The configuration of all compilation units of \SYNEIGHT is controlled by
+  one of the three global configuration files:
+  \begin{itemize}
+  \item {\tt <syneight/config/production.hpp>}
+  \item {\tt <syneight/config/testsupport.hpp>}
+  \item {\tt <syneight/config/unittest.hpp>}
+  \end{itemize}
+\end{definition*}
+%
+As should be clear now, production code does not know that
+test-support or unittest code exists. Likewise, test-support code
+knows nothing about unittest code. Thus these files form a hierarchy
+in the following sense.
+%
+\begin{rule*}{Interface Hierarchy of Global Configuration Files}
+  \label{rule:global-config-file-hier}
+  The interface of {\tt <syneight/config/production.hpp>} must be
+  subset of the interface of {\tt <syneight/config/testsupport.hpp>}
+  and the interface of {\tt <syneight/config/testsupport.hpp>} must be a
+  subset of the interface of {\tt <syneight/config/unittest.hpp>}.
+\end{rule*}
+%
+\begin{rule*}{Global Configuration must be included first}
+  \label{rule:global-config-first}
+  Every source file of \SYNEIGHT must include one of these files before
+  including any other file (being part of \SYNEIGHT or not).
+  %
+  The files included by the global configuration files are the only
+  exception to this rule.\\
+  %
+  The rules following this definition will make sure that this
+  constraint is matched.
+\end{rule*}
+%
+\begin{rule*}{Files included into the global configuration files}
+  A file which is included in a global configuration file, must not
+  be included by a file which includes one of the global configuration
+  files. 
+\end{rule*}
+%
+The above rule divides the include files into two sets. First, there
+are include files which are part of the configuration --  they are
+included by one or more global configuration files. Second, there are
+configured files which include the global configuration files.
+%
+\TODO{Add rules.}
+%
+\begin{remark*}{Test Support and Unittest change the configuration}
+  Note that in the case of a unittest compilation unit, the first
+  included file is {\tt <syneight/config/unittest.hpp>}. Later,
+  ordinary \SYNEIGHT files are included, which include {\tt
+    <syneight/config/production.hpp>}. 
+  %
+  It is important to note that the settings of the unittest
+  configuration can override the settings of the production
+  configuration\footnote{Such overriding must be exercised with care,
+    since the code must be compatible with the usual production code.}
+  and can expand the basic environment interface of \SYNEIGHT (such as
+  providing additional annotations).
+\end{remark*}
+
+\subsubsection{Local relationships}
+
+\begin{rule*}{Inclusion of \texttt{<component.hpp>}}
+  \label{rule:inclusion-component-hpp}
+  All files in a component need to \texttt{\#include <component.hpp>}.
+\end{rule*}
+%
+This rule does not apply for \texttt{component.hpp} itself for obvious reasons.
+As an advantage of this rule, we need not \texttt{\#include} the Global
+Configuration Files in every single file, just in the Interface.
+
+\subsection{Relationships between Components}
+
+\begin{guideline*}{Where to \texttt {\#include} external components}
+  The deeper in the hierarchy (see Rule \ref{rule:files-component})
+  an \texttt {\#include} is made, the better.
+\end{guideline*}
+
+\subsection{Interface}
+\label{sec:interface}
+
+The Interface file is largely the header file, as \texttt{\#included} by the
+user of a component.
+%
+Some simple guidelines are to be obeyed in coding this part.
+
+\begin{guideline*}{Interface Programming Style}
+  The {\tt component.hpp}, being the topmost file in the hierarchy,
+  needs best documentation, rigid naming and consistent including of the
+  dependencies.
+\end{guideline*}
+
+\begin{guideline*}{Contents of the Interface file}
+  The interface file typically consists of the following:
+  \begin{itemize}
+    \item{\texttt{\#include <syneight/config/production.hpp>}}
+    \item{Includes of all dependencies}
+    \item{Named namespaces}
+    \item{Declarations}
+    \item{Type definitions}
+    \item{Inline-function definitions}
+    \item{Constant definitions}
+  \end{itemize}
+\end{guideline*}
+
+\subsection{Implementation}
+\label{sec:implementation}
+
+The implementation is realized in two files. The first in the hierarchy
+is the Template Implementation file. This makes it possible to (...)
+\TODO{Perhaps \CS nows what exactly to write here...}
+(...) The other file implements all the rest that isn't done in the Template
+Implementation file. For both we set up the following guidelines.
+
+\begin{guideline*}{Template Implementation Programming Style}
+  The {\tt component.impl.hpp} is used only to implement templates and other
+  code structures that need to be included directly by the user (or where
+  he/she is better off with including them). Remember that a file is compiled
+  each time it is included, and this file is read by the user directly, so
+  keep the code in here neat and clean.
+\end{guideline*}
+
+\begin{guideline*}{Implementation Programming Style}
+  The {\tt component.cpp} contains the main code of the component. All
+  declarations in the Interface are defined here. A good style in general
+  is mandatory but not as strict as in the other files.
+\end{guideline*}
+%
+There are no predefined dependencies between the two mentioned implementation
+files, so they will be kept independent by default.
+%
+\begin{guideline*}{Implementation / Template Implementation Contents}
+  The implementation files typically consist of the following:
+  \begin{itemize}
+    \item{{\tt \#include <component.hpp>}}
+    \item{Includes of all dependencies}
+    \item{\TODO{Something missing here...}}
+  \end{itemize}
+\end{guideline*}
+%
+The implementation is largely in the hand of the component developer. However,
+a few rules need to be obeyed. See Chapter \ref{cha:development-rules} for
+details.
+
+\subsection{Unittest}
+\label{sec:unittest}
+
+\section{Test Support Components}
+\label{sec:test-supp-comp}
+
+
+
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End: 
+% vim:ts=4:sw=4

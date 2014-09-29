@@ -1,0 +1,136 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{cppUnit - A short overview}
+
+\section{General}
+The aim of CppUnit is establishing test cases and managing them in suites. Test cases in general run methods and compare their results with expected values in order to determine whether the test was successful or not. 
+
+\section {Usage}
+The principle usage of CppUnit is implementing a test class that instantiates another class (unit under test, UUT) in test cases. 
+\begin{itemize}
+\item \emph{test cases} are set up in fixtures, 
+\item \emph{fixtures} are collected in suites using \emph{test callers} 
+\item \emph{suites} are run by test runners
+\item \emph{test runners} run predefined tests and display their results
+\end{itemize}
+Full documentation including usage examples (CppUnit Cookbook) can be found at http://cppunit.sourceforge.net/doc/
+
+\subsection {TestCase}
+CppUnit::TestCase is the atomic procedure of running a test on a class. It provides 
+\begin{verbatim}
+virtual void runTest()
+\end{verbatim}
+and
+\begin{verbatim}
+virtual void run(TestResult result)
+\end{verbatim}
+Within runTest(), previously instantiated UUT objects can be tested using helper macros, e.g.
+\begin{verbatim}
+class ComplexNumberTest : public CppUnit::TestCase { 
+public: 
+  ComplexNumberTest( std::string name ) : CppUnit::TestCase( name ) {}
+  
+  void runTest() {
+    CPPUNIT_ASSERT( Complex (10, 1) == Complex (10, 1) );
+    CPPUNIT_ASSERT( !(Complex (1, 1) == Complex (2, 2)) );
+  }
+};
+\end{verbatim}
+\emph{CPPUNIT\_ASSERT} is a macro matching its parameter with true (test passed). Besides, following assertions are available:
+
+\begin{itemize}
+\item \begin{verbatim} CPPUNIT_ASSERT_MESSAGE(message, condition) \end{verbatim}
+Assertion with a user specified message. 
+\item \begin{verbatim} CPPUNIT_FAIL(message)Ê\end{verbatim}
+Fails with the specified message. 
+\item \begin{verbatim} CPPUNIT_ASSERT_EQUAL(expected, actual)Ê\end{verbatim}
+Asserts that two values are equals. 
+\item \begin{verbatim} CPPUNIT_ASSERT_EQUAL_MESSAGE(message, expected, actual)Ê\end{verbatim}
+Asserts that two values are equals, provides additional message on failure. 
+\item \begin{verbatim} CPPUNIT_ASSERT_DOUBLES_EQUAL(expected, actual, delta) \end{verbatim}
+Macro for primitive value comparisons, delta being the maximal allowed difference. 
+\end{itemize}
+Furthermore, custom assertions can be added by using the \emph{AdditionalMessage} class. 
+
+\subsection {Fixture}
+Fixtures enable the programmer to run several test cases on the same set of predefined objects. Generally, it wraps an UUT including test cases with setUp and tearDown methods thus providing a common environment for a set of test cases. To define a test fixture, do the following:
+\begin{itemize}
+\item implement a subclass of TestCase
+\item the fixture is defined by instance variables
+\item initialize the fixture state by overriding setUp (i.e. construct the instance variables of the fixture)
+\item release any permanent resources allocated in setUp by overriding tearDown.
+\end{itemize}
+Referencing the examples from the CppUnit Cookbook, a possible fixture would be: 
+\begin{verbatim}
+class ComplexNumberTest : public CppUnit::TestFixture  {
+private:
+  Complex *m_10_1, *m_1_1, *m_11_2;
+public:
+  void setUp()
+  {
+    m_10_1 = new Complex( 10, 1 );
+    m_1_1 = new Complex( 1, 1 );
+    m_11_2 = new Complex( 11, 2 );  
+  }
+  void tearDown() 
+  {
+    delete m_10_1;
+    delete m_1_1;
+    delete m_11_2;
+  }
+  void testA()
+  {
+    CPPUNIT_ASSERT( *m_10_1 == *m_10_1 );
+    CPPUNIT_ASSERT( !(*m_10_1 == *m_11_2) );
+  }
+  void testAddition()
+  {
+    CPPUNIT_ASSERT( *m_10_1 + *m_1_1 == *m_11_2 );
+  }
+};
+\end{verbatim}
+A Suite object is going to run the tests implemented in the fixture and collect their results. 
+\subsection{Suite}
+Suites (\emph{CppUnit::TestSuite}) are required when running several test cases at once using TestCaller objects as parameter to run test fixtures. The \emph{TestCaller} parameter accepts any object derived from class Test (such as TestSuite themself), thus they can be added as test to run. 
+Example: 
+\begin{verbatim}
+CppUnit::TestSuite suite;
+CppUnit::TestResult result;
+suite.addTest( new CppUnit::TestCaller<ComplexNumberTest>(
+                       "testEquality", 
+                       &ComplexNumberTest::testEquality ) );
+suite.addTest( new CppUnit::TestCaller<ComplexNumberTest>(
+                       "testAddition", 
+                       &ComplexNumberTest::testAddition ) );
+suite.run( &result );
+\end{verbatim}
+The \emph{run (TestResult* result)} method returns all test results into \emph{result}, the given TestResult object. 
+\subsection{Test Runner}
+\emph{CppUnit:TestRunner}, finally, is used for running tests and displaying their results. In order to be accessible to TestRunners, TestSuite objects have to be extended with a static method suite that returns a test suite: 
+\begin{verbatim}
+[...]
+public: 
+  static CppUnit::Test *suite()
+  {
+    CppUnit::TestSuite *suiteOfTests = 
+       new CppUnit::TestSuite( "ComplexNumberTest" );
+       
+    suiteOfTests->addTest( new CppUnit::TestCaller<ComplexNumberTest>( 
+                                   "testEquality", 
+                                   &ComplexNumberTest::testEquality ) );
+    suiteOfTests->addTest( new CppUnit::TestCaller<ComplexNumberTest>(
+                                   "testAddition",
+                                   &ComplexNumberTest::testAddition ) );
+    return suiteOfTests;
+  }
+[...]
+\end{verbatim}
+\subsection{Helper Macros}
+TODO
+
+% vim:ts=4:sw=4

@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# NOTE: This is only an interim solution, and will be deleted later on.
+# The functionality of this script will soon be provided by AutoAAL.
+
+# input to the script
+path_to_source=$1
+path_to_doc=$2
+
+# further configuration #######################################################
+
+# to include:
+#   - all tag files for all lib/lib_ts/lib_t of all packages built with AutoAAL
+#   - user supplied lists 
+#   - the lists must be inheritancd, i.e., if A < B < C then C must contain
+#     all tag files for A
+doxy_tag_files=
+
+#    - user supplied
+#    - inherited (like doxy_tag_files)
+doxy_macro_predefined="SYNEIGHT__SWITCH__BUILD_LEVEL=2 "
+
+#    - user supplied
+#    - inherited (like doxy_tag_files)
+doxy_expand_as_defined="SYNEIGHT__BEGIN__NAMESPACE__SYNEIGHT SYNEIGHT__END__NAMESPACE__SYNEIGHT"
+doxy_expand_as_defined="${doxy_expand_as_defined} SYNEIGHT__BEGIN__NAMESPACE__INTERNAL SYNEIGHT__END__NAMESPACE__INTERNAL"
+doxy_expand_as_defined="${doxy_expand_as_defined} SYNEIGHT__BEGIN__NAMESPACE__UNNAMED SYNEIGHT__END__NAMESPACE__UNNAMED"
+doxy_expand_as_defined="${doxy_expand_as_defined} SYNEIGHT__BEGIN__NAMESPACE__DIAGNOSTICS SYNEIGHT__END__NAMESPACE__DIAGNOSTICS"
+doxy_expand_as_defined="${doxy_expand_as_defined} SYNEIGHT__BEGIN__NAMESPACE__UNITTEST SYNEIGHT__END__NAMESPACE__UNITTEST"
+doxy_expand_as_defined="${doxy_expand_as_defined} SYNEIGHT__BEGIN__NAMESPACE__BASEUTIL SYNEIGHT__END__NAMESPACE__BASEUTIL"
+
+#    - user supplied
+example_path=
+
+#    - user supplied
+doxy_include_path=
+
+
+# derived configuration ###########################################################
+
+# determining the sources: all sources in a SINGLE line
+source_lib=`find ${path_to_source} -name "*pp" -a ! -name "*.ts.*pp" -a ! -name "*.t.cpp" -exec echo -n "{} " ';'`
+source_ts=`find ${path_to_source} -name "*.ts.*pp" -exec echo -n "{} " ';'`
+source_t=`find ${path_to_source} -name "*.t.cpp" -exec echo -n "{} " ';'`
+
+# add path to the sources as include path
+doxy_include_path="${doxy_include_path} @abs_top_srcdir@"
+
+# where to place the documentation
+path_to_doc_lib=${path_to_doc}/lib
+path_to_doc_lib_ts=${path_to_doc}/lib.ts
+path_to_doc_lib_t=${path_to_doc}/lib.t
+
+# the configuration files for the documentation
+cfg_lib=${path_to_doc_lib}/doxygen-lib.conf.in
+cfg_lib_ts=${path_to_doc_lib_ts}/doxygen-ts.conf.in
+cfg_lib_t=${path_to_doc_lib_t}/doxygen-t.conf.in
+
+# make the directories for the documentation
+mkdir -p ${path_to_doc_lib}
+mkdir -p ${path_to_doc_lib_ts}
+mkdir -p ${path_to_doc_lib_t}
+
+# copy stub documentation
+cp doc/api/doxygen-template.conf.in.in ${cfg_lib}
+cp doc/api/doxygen-template.conf.in.in ${cfg_lib_ts}
+cp doc/api/doxygen-template.conf.in.in ${cfg_lib_t}
+
+# set the various parameters
+echo "PROJECT_NAME = ${PROJECT_NAME}" >> ${cfg_lib}
+echo "PROJECT_NAME = ${PROJECT_NAME}/TestSupport" >> ${cfg_lib_ts}
+echo "PROJECT_NAME = ${PROJECT_NAME}/Test" >> ${cfg_lib_t}
+
+echo "OUTPUT_DIRECTORY = @abs_top_builddir@/doc/api/lib" >> ${cfg_lib}
+echo "OUTPUT_DIRECTORY = @abs_top_builddir@/doc/api/lib.ts" >> ${cfg_lib_ts}
+echo "OUTPUT_DIRECTORY = @abs_top_builddir@/doc/api/lib.t" >> ${cfg_lib_t}
+
+echo "GENERATE_TAGFILE = ${path_to_doc_lib}/doxy_tag_file" >> ${cfg_lib}
+echo "GENERATE_TAGFILE = ${path_to_doc_lib_ts}/doxy_tag_file" >> ${cfg_lib_ts}
+echo "GENERATE_TAGFILE = ${path_to_doc_lib_t}/doxy_tag_file" >> ${cfg_lib_t}
+
+echo "INPUT = ${source_lib}" >> ${cfg_lib}
+echo "INPUT = ${source_lib_ts}" >> ${cfg_lib_ts}
+echo "INPUT = ${source_lib_t}" >> ${cfg_lib_t}
+
+echo "TAGFILES = ${doxy_tag_files}" >> ${cfg_lib}
+echo "TAGFILES = ${doxy_tag_files} ${path_to_doc_lib}/doxy_tag_file" >> ${cfg_lib_ts}
+echo "TAGFILES = ${doxy_tag_files} ${path_to_doc_lib}/doxy_tag_file ${path_to_doc_lib_ts}/doxy_tag_file" >> ${cfg_lib_t}
+
+echo "EXAMPLE_PATH = ${example_path}" >> ${cfg_lib}
+echo "EXAMPLE_PATH = ${example_path}" >> ${cfg_lib_ts}
+echo "EXAMPLE_PATH = ${example_path}" >> ${cfg_lib_t}
+
+echo "PREDEFINED = ${doxy_macro_predefined}" >> ${cfg_lib}
+echo "PREDEFINED = ${doxy_macro_predefined}" >> ${cfg_lib_ts}
+echo "PREDEFINED = ${doxy_macro_predefined}" >> ${cfg_lib_t}
+
+echo "EXPAND_AS_DEFINED = ${doxy_expand_as_defined}" >> ${cfg_lib}
+echo "EXPAND_AS_DEFINED = ${doxy_expand_as_defined}" >> ${cfg_lib_ts}
+echo "EXPAND_AS_DEFINED = ${doxy_expand_as_defined}" >> ${cfg_lib_t}
+
+echo "INCLUDE_PATH = ${doxy_include_path}" >> ${cfg_lib}
+echo "INCLUDE_PATH = ${doxy_include_path}" >> ${cfg_lib_ts}
+echo "INCLUDE_PATH = ${doxy_include_path}" >> ${cfg_lib_t}
+

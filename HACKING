@@ -1,0 +1,76 @@
+-------------------------------------------------------------------------------
+HACKING
+-------------------------------------------------------------------------------
+
+Basic svn usage
+---------------
+
+TODO
+
+
+How to add new files to the build system
+----------------------------------------
+
+If you want to add a new file to the Syneight build system do the following:
+
+ * If there's already a Makefile.am in the directory:
+     * List your file in the Makefile.am by adding it to
+       * foo_SOURCES (it it's a source file)
+       * foo_HEADERS (if it's a header file)
+     * If you want to, you can re-run 'bootstrap' in the top-level
+       Syneight directory. This *should* be unnecessary with automake 1.8
+       and above, as it should automatically detect your changes and
+       re-run configure et. al. for you, where needed.
+
+ * If there's no Makefile.am in the directory:
+     * Copy an existing Makefile.am from another source directory and adapt it.
+     * You *at least* need to change:
+         * SUBDIRS (which subdirectories to process, if any)
+         * bin_PROGRAMS, if an excecutable program is to be built in this dir.
+         * foo_SOURCES and foo_HEADERS: List all source/header files here.
+     * Add a new line in AC_CONFIG_FILES in configure.ac, so that configure
+       knows that it should create a new Makefile using your newly created
+       Makefile.am.
+     * Re-run 'bootstrap' in the top-level Syneight directory.
+
+ * If you add intermediate directories, which don't contain any files, but
+   only subdirectories:
+     * Copy another Makefile.am from such an intermediate directory and
+       adapt it.
+     * You *at least* need to change:
+         * SUBDIRS (which subdirectories to process, if any)
+     * Add a new line in AC_CONFIG_FILES in configure.ac, so that configure
+       knows that it should create a new Makefile using your newly created
+       Makefile.am.
+     * Re-run 'bootstrap' in the top-level Syneight directory.
+
+ * Test the build:
+    * $ cd build/audit
+      $ ../../configure --enable-buildtype=audit
+      $ make
+    * This should work, if it doesn't, fix it.
+
+ * Test the build again. Just to be sure.
+    * In the top-level Syneight directory do:
+      $ cd build/audit
+      $ make maintainer-clean
+      $ cd ../..
+      $ rm -rf build/audit/*
+      $ svn up
+      $ ./bootstrap
+      $ cd build/audit
+      $ ../../configure --enable-buildtype=audit
+      $ make
+    * If this still works, you could be lucky.
+
+ * Add your new files to svn:
+    * Run 'svn diff' in the top-level Syneight directory. If you use vim,
+      you could do a 'svn diff | vim -', other editors might also have
+      some handy way to do this.
+    * Check that you only changed what you wanted to change, and that you
+      only commit what you really wanted to commit.
+    * Run 'svn ci'.
+    * Write a useful, verbose comment and explain *why* you added which
+      files (no need to list them *all*, svn does that for you) and what
+      they are used for.
+

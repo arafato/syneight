@@ -1,6 +1,7 @@
 -------------------------------------------------------------------------------
-License
+Bugs
 -------------------------------------------------------------------------------
 
-TODO
+ * 'make dist' et. al. don't work from build/audit, the tarball doesn't
+   contain any TeX files.
 

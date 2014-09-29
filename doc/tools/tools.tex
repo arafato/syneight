@@ -1,0 +1,58 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\documentclass[a4paper, 11pt]{book}
+
+\setcounter{secnumdepth}{3}
+
+\usepackage{fullpage}
+\usepackage{varioref}
+\usepackage{epic}
+\usepackage{ecltree}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{epsfig}
+\usepackage{hhline}
+\usepackage{multirow}
+\usepackage{hhline}
+\usepackage{graphicx}
+
+\sloppy
+
+\input{syneight/env.tex}
+\input{syneight/definedterms.tex}
+\input{syneight/abbreviations.tex}
+
+\renewcommand{\dt}[1]{#1}
+
+\newcommand{\INTERFACE}[1]{$\Rightarrow\left\{#1\right\}$}
+
+\begin{document}
+\title{\SYNEIGHTLOGO\\\vspace{1cm}Tools}
+\author{Uwe Hermann, Christian Schallhart}
+\catcode`\$=12
+\date{\texttt{$Id: tools.tex 1053 2005-06-07 12:14:38Z esdentem $}}
+\catcode`\$=3
+\maketitle
+\tableofcontents
+
+\newpage
+
+\include{introduction}
+\include{directory-structure}
+\include{svn}
+\include{building}
+\include{logging}
+\include{testing}
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "t"
+%%% End: 
+% vim:ts=4:sw=4

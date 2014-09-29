@@ -1,0 +1,43 @@
+The Interface to the Annotation Framework
+-----------------------------------------
+
+INCLUDE ROOT: syneight/annotations
+
+DIRECTLY USED BY: 
+   - global configuration files (syneight/base/config/)
+
+INDIRECTLY USED BY:
+   - almost all the code (exception: syneight/base/preprocessor 
+                                     syneight/base/exception
+                                     syneight/base/root)
+
+DIRECTLY USING:
+   - syneight/base/annotations/frame
+   - syneight/base/root
+
+
+STRUCTURE:
+   - main includes (production.hpp, testsupport.hpp, unittest.hpp)
+       These includes setup the annotation framework for the corresponding
+       code type.
+   - config.hpp
+       Completes the client supplied configuration of the for the annotation 
+       framework. Checks the client supplied configuration.
+   - TODO (backend, level, type)
+
+   - The implementation comes in three layers (top to bottom):
+       * bits/ contains the different annotations, is respsonsible for 
+         handling the conditional compilation (e.g., assert,
+         assert_log, check)
+       * base/ contains the implementation of the annotations (e.g. condition 
+         which is used by assert, assert_log, check). These files use 
+	 syneight/base/annotations/frame.
+
+
+
+
+
+possible expansions: 
+   * adding SYNEIGHT__AUD__BLOCK_ENTER_NR(WHAT,NR)
+            SYNEIGHT__AUD__BLOCK_ENTER_NR1(WHAT,NR,CATEGORY)
+            and the symmetrically for PROCEDURE and METHOD.

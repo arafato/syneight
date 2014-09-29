@@ -1,0 +1,10 @@
+#!/bin/sh
+if [ -e ./bootstrap ]; then
+	./bootstrap &&
+	cd build/audit/ &&
+	../../configure --disable-static &&
+	make | grep '^>>>'
+else
+	echo "You must be in the root directory to execute this script."
+fi
+

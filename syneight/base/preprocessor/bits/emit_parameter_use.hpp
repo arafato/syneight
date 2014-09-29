@@ -1,0 +1,63 @@
+/*-----------------------------------------------------------------------------
+ * Syneight - A soft-realtime transaction monitor.
+ * Copyright (C) 2003-2004 The Syneight Group.
+ *
+ * TODO: License.
+ *---------------------------------------------------------------------------*/
+
+/**
+ * @file syneight/base/preprocessor/bits/emit_parameter_use.hpp
+ *
+ * @author Christian Schallhart
+ * @author $Author: esdentem $
+ *
+ * @version $Id: emit_parameter_use.hpp 1053 2005-06-07 12:14:38Z esdentem $
+ *
+ * @brief @ref SYNEIGHT__BASE__EMIT__PARAMETER_USE and
+ * @ref SYNEIGHT__BASE__EMIT__PARAMETER_USE_MAX.
+ *
+ * Used in syneight/base/util/string.hpp.
+ *
+ * @note DOCUMENTED
+ *
+ * @todo test
+ */
+
+#ifndef SYNEIGHT__BASE__PREPROCESSOR__BITS__EMIT_PARAMETER_USE_HPP
+#define SYNEIGHT__BASE__PREPROCESSOR__BITS__EMIT_PARAMETER_USE_HPP
+
+/**
+ * @brief Emits paramter lists where each entry consists of two fixed
+ * strings (@a PRE and @a POST) where the first is concatenated with
+ * the running id. The id is counted from 0 to @ref
+ * SYNEIGHT__BASE__EMIT__PARAMETER_USE_MAX
+ *
+ * For example:
+ *   SYNEIGHT__BASE__EMIT__PARAMETER_USE(<< t,COUNT,<< " ")
+ * yields 
+ *   << t0 << " " << t1 << " " << ... tCOUNT << " "
+ */ 
+#define SYNEIGHT__BASE__EMIT__PARAMETER_USE(PRE,COUNT,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE(PRE,COUNT,POST)
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE(PRE,COUNT,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE ## COUNT (PRE,POST)
+
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE10(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE9(PRE,POST) PRE ## 10 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE9(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE8(PRE,POST) PRE ## 9 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE8(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE7(PRE,POST) PRE ## 8 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE7(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE6(PRE,POST) PRE ## 7 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE6(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE5(PRE,POST) PRE ## 6 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE5(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE4(PRE,POST) PRE ## 5 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE4(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE3(PRE,POST) PRE ## 4 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE3(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE2(PRE,POST) PRE ## 3 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE2(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE1(PRE,POST) PRE ## 2 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE1(PRE,POST) SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE0(PRE,POST) PRE ## 1 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE0(PRE,POST) PRE ## 0 POST
+#define SYNEIGHT__INTERNAL__EMIT__PARAMETER_USE_1(PRE,POST) 
+
+/**
+ * @brief The maximum count in @ref SYNEIGHT__BASE__EMIT__PARAMETER_USE
+ */
+#define SYNEIGHT__BASE__EMIT__PARAMETER_USE_MAX 10
+
+#endif
+
+// vim:ts=4:sw=4

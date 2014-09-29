@@ -1,0 +1,981 @@
+#!/usr/bin/env ruby
+#------------------------------------------------------------------------------
+# autoautoconf -- recursively generate Makefile.am's
+# Copyright (C) 2004 Uwe Hermann, Piotr Esden-Tempski
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#------------------------------------------------------------------------------
+
+require 'getoptlong'
+
+$version = '0.1'
+
+
+#------------------------------------------------------------------------------
+# Binary class.
+#------------------------------------------------------------------------------
+class Binary
+	#----------------------------------------------------------------------
+	# Constructor.
+	#----------------------------------------------------------------------
+	def initialize(name)
+		@name = name
+		@dep_hpp_files = Array.new
+		@dep_libs = Array.new
+	end
+
+	#----------------------------------------------------------------------
+	# Access member variables.
+	#----------------------------------------------------------------------
+	attr_reader :name, :execname, :dep_hpp_files
+
+	#----------------------------------------------------------------------
+	# Add a hpp file this binary depends on.
+	#----------------------------------------------------------------------
+	def add_dep_hpp(dep_hpp)
+		dep_hpp_file = @dep_hpp_files.find { |file| "#{dep_hpp}" == "#{file}" }
+		@dep_hpp_files.push(dep_hpp) if ("#{dep_hpp_file}" == "")
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Add a lib we depend on.
+	#----------------------------------------------------------------------
+	def add_dep_lib(dep_lib)
+		dep_lib_file = @dep_libs.find { |file| "#{file}" == "#{dep_lib}" }
+		@dep_libs.push(dep_lib) if ("#{dep_lib_file}" == "")
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Get a string containing all libs we depend on.
+	#----------------------------------------------------------------------
+	def get_dep_libs_string
+		dep_libs_string = ""
+		@dep_libs.reverse_each do |dep_lib|
+			dep_libs_string += "#{dep_lib} "
+		end
+		return dep_libs_string.strip
+	end
+
+	#----------------------------------------------------------------------
+	# Get an array of libs we depend on.
+	#----------------------------------------------------------------------
+	def get_dep_libs_list
+		dep_libs_list = Array.new
+		@dep_libs.each do |dep_lib|
+			dep_libs_list.push(dep_lib)
+		end
+		return dep_libs_list
+	end
+
+	#----------------------------------------------------------------------
+	# Print hpp files this binary depends on.
+	#----------------------------------------------------------------------
+	def print_dep_hpp
+		@dep_hpp_files.each do |hpp_file|
+			puts "dep: #{hpp_file}"
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Get the name of the executable.
+	#----------------------------------------------------------------------
+	def execname
+		if @name =~ /\.t\.cpp$/ then
+			return @name.sub(/\.cpp$/, "").gsub(/\./, "_")
+		else
+			return @name.sub(/\.b\.cpp$/, "")
+		end
+	end
+end
+
+#------------------------------------------------------------------------------
+# Drectory class.
+#------------------------------------------------------------------------------
+class Directory
+	#----------------------------------------------------------------------
+	# Constructor.
+	#----------------------------------------------------------------------
+	def initialize(dirname)
+		@name = dirname
+		@subdirs = Array.new
+		@cpp_files = Array.new
+		@t_cpp_files = Array.new
+		@ts_cpp_files = Array.new
+		@b_cpp_files = Array.new
+		@hpp_files = Array.new
+		@ts_hpp_files = Array.new
+		@dep_hpp_files = Array.new
+		@ldflags = ""
+		# Flag that something is depending on the library in this directory.
+		@depending = false
+	end
+
+	#----------------------------------------------------------------------
+	# Access member variables.
+	#----------------------------------------------------------------------
+	attr_reader :name, :subdirs, :ldflags, :depending
+
+	#----------------------------------------------------------------------
+	# Set depending.
+	#----------------------------------------------------------------------
+	def set_depending(dep)
+		@depending = dep
+		@subdirs.each do |subdir|
+			subdir.set_depending(dep)
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Set ldflags for the library in this directory.
+	#----------------------------------------------------------------------
+	attr_writer :ldflags
+
+	#----------------------------------------------------------------------
+	# Add a directory.
+	#----------------------------------------------------------------------
+	def add(dir)
+		@subdirs.push(dir)
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Print this directory name and all subdirectories recursively.
+	#----------------------------------------------------------------------
+	def print_recursive1(parentdir)
+		puts "#{parentdir}/#{@name}"
+		print_b_cpp
+		print_t_cpp
+		print_ts_cpp
+		print_cpp
+		print_hpp
+		print_ts_hpp
+		@subdirs.each do |subdir|
+			subdir.print_recursive1("#{parentdir}/#{subdir.name}")
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Print this directory name and all subdirectories recursively.
+	#----------------------------------------------------------------------
+	def print_recursive
+		puts "#{@name}"
+		print_b_cpp
+		print_t_cpp
+		print_ts_cpp
+		print_cpp
+		print_hpp
+		print_ts_hpp
+		@subdirs.each do |subdir|
+			subdir.print_recursive1("#{subdir.name}")
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Access a subdirectory.
+	#----------------------------------------------------------------------
+	def [](key)
+		if key.kind_of?(Integer)
+			result = @subdirs[key]
+		else
+			if @name == key then
+				return self
+			elsif key =~ /^#{@name}\// then
+				@subdirs.each do |directory| 
+					dir = directory["#{$'}"]
+					return dir if (dir != nil)
+				end
+			else
+				return nil
+			end
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Add a cpp file.
+	#----------------------------------------------------------------------
+	def add_cpp(cpp)
+		@cpp_files.push(cpp)
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Print cpp files.
+	#----------------------------------------------------------------------
+	def print_cpp
+		@cpp_files.each do |cpp_file|
+			puts "cpp: #{cpp_file}"
+		end
+	end
+	
+	#----------------------------------------------------------------------
+	# Add a t.cpp file.
+	#----------------------------------------------------------------------
+	def add_t_cpp(t_cpp)
+		@t_cpp_files.push(t_cpp)
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Print t.cpp files.
+	#----------------------------------------------------------------------
+	def print_t_cpp
+		@t_cpp_files.each do |t_cpp_file|
+			puts "t_cpp: #{t_cpp_file.name}"
+			t_cpp_file.print_dep_hpp
+		end
+	end
+	
+	#----------------------------------------------------------------------
+	# Add a ts.cpp file.
+	#----------------------------------------------------------------------
+	def add_ts_cpp(ts_cpp)
+		@ts_cpp_files.push(ts_cpp)
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Print ts.cpp files.
+	#----------------------------------------------------------------------
+	def print_ts_cpp
+		@ts_cpp_files.each do |ts_cpp_file|
+			puts "ts_cpp: #{ts_cpp_file}"
+		end
+	end
+	
+	#----------------------------------------------------------------------
+	# Add a b.cpp file.
+	#----------------------------------------------------------------------
+	def add_b_cpp(b_cpp)
+		@b_cpp_files.push(b_cpp)
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Print b.cpp files.
+	#----------------------------------------------------------------------
+	def print_b_cpp
+		@b_cpp_files.each do |b_cpp_file|
+			puts "b_cpp: #{b_cpp_file.name}"
+			b_cpp_file.print_dep_hpp
+		end
+	end
+	
+	#----------------------------------------------------------------------
+	# Add a hpp file.
+	#----------------------------------------------------------------------
+	def add_hpp(hpp)
+		@hpp_files.push(hpp)
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Print hpp files.
+	#----------------------------------------------------------------------
+	def print_hpp
+		@hpp_files.each do |hpp_file|
+			puts "hpp: #{hpp_file}"
+		end
+	end
+	
+	#----------------------------------------------------------------------
+	# Add a ts.hpp file.
+	#----------------------------------------------------------------------
+	def add_ts_hpp(ts_hpp)
+		@ts_hpp_files.push(ts_hpp)
+		return self
+	end
+
+	#----------------------------------------------------------------------
+	# Print ts.hpp files.
+	#----------------------------------------------------------------------
+	def print_ts_hpp
+		@ts_hpp_files.each do |ts_hpp_file|
+			puts "ts_hpp: #{ts_hpp_file}"
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Check if we contain subdirectories.
+	#----------------------------------------------------------------------
+	def has_subdirs
+		return @subdirs.length > 0
+	end
+
+	#----------------------------------------------------------------------
+	# Get subdirs as space seperated string list.
+	#----------------------------------------------------------------------
+	def get_subdirs_string
+		return_string = ""
+		@subdirs.each do |subdir|
+			return_string += "#{subdir.name} "
+		end
+		return return_string.strip
+	end
+
+	#----------------------------------------------------------------------
+	# Check if we contain subdirectories.
+	#----------------------------------------------------------------------
+	def has_headers
+		return (@hpp_files.length > 0 or @ts_hpp_files.length > 0)
+	end
+
+	#----------------------------------------------------------------------
+	# Get subdirs as space seperated string list.
+	#----------------------------------------------------------------------
+	def get_headers_string
+		return_string = ""
+		@hpp_files.each do |header|
+			return_string += "#{header} "
+		end
+
+		@ts_hpp_files.each do |header|
+			return_string += "#{header} "
+		end
+
+		return return_string.strip
+	end
+	
+	#----------------------------------------------------------------------
+	# Check if we have a library to build.
+	#----------------------------------------------------------------------
+	def has_library
+		return @cpp_files.length > 0
+	end
+
+	#----------------------------------------------------------------------
+	# Get library sources.
+	#----------------------------------------------------------------------
+	def get_library_sources
+		return_string = ""
+		@cpp_files.each do |source_file|
+			header_file = @hpp_files.find do |header_file| 
+				header_file == source_file.sub(/cpp$/, "hpp")
+			end
+
+			return_string += "#{source_file} "
+			return_string += "#{header_file} " if (header_file != "")
+		end
+
+		return return_string.strip
+	end
+
+	#----------------------------------------------------------------------
+	# Check if we have a testsupport.
+	#----------------------------------------------------------------------
+	def has_testsupport_library
+		return @ts_cpp_files.length > 0
+	end
+
+	#----------------------------------------------------------------------
+	# Get testsupport sources.
+	#----------------------------------------------------------------------
+	def get_testsupport_library_sources
+		return_string = ""
+		@ts_cpp_files.each do |source_file|
+			header_file = @ts_hpp_files.find do |header_file| 
+				header_file == source_file.sub(/cpp$/, "hpp")
+			end
+
+			return_string += "#{source_file} "
+			return_string += "#{header_file} " if (header_file != "")
+		end
+
+		return return_string.strip
+	end
+
+	#----------------------------------------------------------------------
+	# Check if we have libraries in subdirectories.
+	#----------------------------------------------------------------------
+	def has_libraries_recursive
+		@subdirs.each do |subdir|
+			if subdir.has_library or subdir.has_libraries_recursive then
+				return true
+			end
+		end
+		return false
+	end
+
+	#----------------------------------------------------------------------
+	# Get libraries in subdirectories as a space separated list in a string.
+	#----------------------------------------------------------------------
+	def get_libraries_recursive_string
+		libraries = ""
+		@subdirs.each do |subdir|
+			if subdir.has_library then
+				libraries += "#{subdir.name}/lib#{subdir.name}.la "
+			end
+			subdir_libraries = subdir.get_libraries_recursive_string.split
+			subdir_libraries.each do |subdirlib|
+				libraries += "#{subdir.name}/#{subdirlib} "
+			end
+		end
+		return libraries.strip
+	end
+	
+	#----------------------------------------------------------------------
+	# Get libaries in subdirectories as an array.
+	#----------------------------------------------------------------------
+	def get_libraries_recursive_list
+		libraries = get_libraries_recursive_string.split
+		return libraries
+	end
+
+	#----------------------------------------------------------------------
+	# Test if we have a binary to build.
+	#----------------------------------------------------------------------
+	def has_binary
+		return @b_cpp_files.length > 0
+	end
+
+	#----------------------------------------------------------------------
+	# Get binary name list as string.
+	#----------------------------------------------------------------------
+	def get_binary_names_string
+		binary_names = ""
+		@b_cpp_files.each do |binary|
+			binary_name = binary.name.sub(/\.b\.cpp/, "")
+			binary_names += "#{binary_name} "
+		end
+		return binary_names.strip
+	end
+
+	#----------------------------------------------------------------------
+	# Get binary name list.
+	#----------------------------------------------------------------------
+	def get_binaries
+		binary_names = Array.new
+		@b_cpp_files.each do |binary|
+			binary_names.push(binary.name.sub(/\.b\.cpp/, ""))
+		end
+		return @b_cpp_files
+	end
+
+	#----------------------------------------------------------------------
+	# Check if we have a test binary to build.
+	#----------------------------------------------------------------------
+	def has_test
+		return @t_cpp_files.length > 0
+	end
+
+	#----------------------------------------------------------------------
+	# Get test binary name list as string.
+	#----------------------------------------------------------------------
+	def get_test_names_string
+		test_names = ""
+		@t_cpp_files.each do |test|
+			test_name = test.name.sub(/\.cpp/, "")
+			test_names += "#{test_name} "
+		end
+		return test_names.strip
+	end
+
+	#----------------------------------------------------------------------
+	# Get test binary name list.
+	#----------------------------------------------------------------------
+	def get_tests
+		return @t_cpp_files
+	end
+
+	#----------------------------------------------------------------------
+	# Get a list of all binary objects.
+	#----------------------------------------------------------------------
+	def get_binary_list
+		binary_list = Array.new
+		@b_cpp_files.each do |cpp_file|
+			binary_list.push(cpp_file)
+		end
+		@t_cpp_files.each do |cpp_file|
+			binary_list.push(cpp_file)
+		end
+		@subdirs.each do |subdir|
+			binary_list.concat(subdir.get_binary_list)
+		end
+
+		return binary_list
+	end
+
+	#----------------------------------------------------------------------
+	# Get a list of all Binary paths objects.
+	#----------------------------------------------------------------------
+	def get_binary_path_list
+		binary_path_list = Array.new
+		@b_cpp_files.each do |cpp_file|
+			binary_path_list.push("#{@name}")
+		end
+		@t_cpp_files.each do |cpp_file|
+			binary_path_list.push("#{@name}")
+		end
+		@subdirs.each do |subdir|
+			binary_path_list_temp = subdir.get_binary_path_list
+			binary_path_list_temp.each do |path|
+				binary_path_list.push("#{@name}/#{path}")
+			end
+		end
+
+		return binary_path_list
+	end
+
+	#----------------------------------------------------------------------
+	# Check if we contain a cpp file.
+	#----------------------------------------------------------------------
+	def has_cpp_file(cpp_file)
+		file = @cpp_files.find { |file| "#{file}" == "#{cpp_file}" }
+		return "#{file}" != ""
+	end
+end
+
+#------------------------------------------------------------------------------
+# Directory_Tree class.
+#------------------------------------------------------------------------------
+class Directory_Tree
+	#----------------------------------------------------------------------
+	# Constructor.
+	#----------------------------------------------------------------------
+	def initialize(includedir, startdir)
+		@includedir = includedir
+		@startdir = startdir
+		@dirroot = Directory.new(@startdir)
+
+		puts "autoautoconf: collecting directory data"
+		# Collecting data for the current directory.
+		get_dir_data(@dirroot)
+
+		# Collecting data for all subdirectories.
+		get_dir_data_recursive(@dirroot)
+
+		# Print the data we collected.
+		# TODO: There are some things missing, e.g. depending.
+		#@dirroot.print_recursive
+
+		puts "autoautoconf: calculating dependencies"
+		calculate_dependencies
+	end
+
+	#----------------------------------------------------------------------
+	# Get the path of 'dir', but relative to 'basedir'.
+	#----------------------------------------------------------------------
+	def get_relative_dir(dir, basedir)
+		numdirs = dir.split("/").length
+		numdirs2 = basedir.split("/").length
+		reldir = File.join(dir.split("/")[numdirs2-1...numdirs])
+		return reldir
+	end
+
+	#----------------------------------------------------------------------
+	# Get directory data recursive.
+	#----------------------------------------------------------------------
+	def get_dir_data_recursive2(dir_string, subdir)
+		reldir = get_relative_dir(dir_string, @startdir)
+		puts "autoautoconf: processing #{reldir}/#{subdir.name}"
+
+		Dir.foreach("#{dir_string}/#{subdir.name}") do |entry|
+			if "#{entry}" != "." and "#{entry}" != ".." \
+			and "#{entry}" != ".svn" and "#{entry}" != "CVS" \
+			and "#{entry}" != ".deps" and "#{entry}" != ".libs" \
+			and File.ftype("#{dir_string}/#{subdir.name}/#{entry}") == "directory"
+				subsubdir = Directory.new("#{entry}")
+				subdir.add(subsubdir)
+				get_dir_data2("#{dir_string}/#{subdir.name}", subsubdir)
+				get_dir_data_recursive2("#{dir_string}/#{subdir.name}", subsubdir)
+			end
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Get directory data recursive.
+	#----------------------------------------------------------------------
+	def get_dir_data_recursive(dir)
+		reldir = get_relative_dir(dir.name, @startdir)
+		#puts "autoautoconf: processing #{dir.name}"
+		puts "autoautoconf: processing #{reldir}"
+
+		Dir.foreach("#{dir.name}") do |entry|
+			if "#{entry}" != "." and "#{entry}" != ".." \
+			and "#{entry}" != ".svn" and "#{entry}" != "CVS" \
+			and "#{entry}" != ".deps" and "#{entry}" != ".libs" \
+			and File.ftype("#{dir.name}/#{entry}") == "directory"
+				subdir = Directory.new("#{entry}")
+				dir.add(subdir)
+				get_dir_data2("#{dir.name}", subdir)
+				get_dir_data_recursive2("#{dir.name}", subdir)
+			end
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Get binary dependency hpp files and put them in the binary object.
+	#----------------------------------------------------------------------
+	def get_binary_hpp_deps(directory, cpp_file)
+		Dir.chdir("#{directory}")
+
+		binary = Binary.new("#{cpp_file}")
+
+		dep_hpp_files = `cpp -MM -I#{@includedir} #{cpp_file}`
+		dep_hpp_files = dep_hpp_files.split
+
+		dep_hpp_files.each do |hpp_file|
+			hpp_file = hpp_file.sub(Regexp.new(" *(\S+)"), "#($1)")
+
+			if hpp_file =~ /^(\/(\w|-|_|\.)*)+.hpp$/ and hpp_file !~ /#{Regexp.escape(directory)}/ then
+				binary.add_dep_hpp("#{hpp_file}")
+			end
+		end
+
+		return binary
+	end
+
+	#----------------------------------------------------------------------
+	# Get directory data.
+	#----------------------------------------------------------------------
+	def get_dir_data2(dir_string, directory)
+		if dir_string != ""	
+			Dir.chdir("#{dir_string}/#{directory.name}")
+		else
+			Dir.chdir("#{directory.name}")
+		end
+
+		Dir["*.cpp"].each do |cpp_file|
+			if cpp_file =~ /\.t\.cpp$/ then
+				dep_hpp_files = `cpp -MM -I#{@includedir} #{cpp_file}`
+				directory.add_t_cpp(get_binary_hpp_deps("#{dir_string}/#{directory.name}", "#{cpp_file}"))
+			elsif cpp_file =~ /\.ts\.cpp$/ then
+				directory.add_ts_cpp("#{cpp_file}")
+			elsif cpp_file =~ /\.b\.cpp$/ then
+				dep_hpp_files = `cpp -MM -I#{@includedir} #{cpp_file}`
+				directory.add_b_cpp(get_binary_hpp_deps("#{dir_string}/#{directory.name}", "#{cpp_file}"))
+			else
+				directory.add_cpp("#{cpp_file}")
+			end
+		end
+
+		Dir["*.hpp"].each do |hpp_file|
+			if hpp_file =~ /\.ts\.hpp$/ then
+				directory.add_ts_hpp("#{hpp_file}")
+			else
+				directory.add_hpp("#{hpp_file}")
+			end
+		end
+
+		if Dir["ldflags"].length > 0 then
+			ldflags = open("ldflags", "r")
+			directory.ldflags = ldflags.gets
+			ldflags.close
+		end
+
+	end
+
+	#----------------------------------------------------------------------
+	# Get directory data.
+	#----------------------------------------------------------------------
+	def get_dir_data(directory)
+		get_dir_data2("", directory)
+	end
+
+	#----------------------------------------------------------------------
+	# Add some line continuations and newlines to a list of
+	# files/directories.
+	#----------------------------------------------------------------------
+	def beautify(list)
+
+		# Only beautify long lines.
+		return list if (list.length < 50)
+
+		newlist = "\\\n"
+		list.split.each do |l|
+			newlist += "#{l} \\\n"
+		end
+
+		# Strip off the last line continuation and the last newline.
+		newlist = newlist[0..-4]
+
+		return newlist
+	end
+
+	#----------------------------------------------------------------------
+	# Generate dependency lists.
+	#----------------------------------------------------------------------
+	def calculate_dependencies
+		binary_list = @dirroot.get_binary_list
+		# We probably do not need that
+		#binary_path_list = @dirroot.get_binary_path_list
+
+		for i in 0...binary_list.length do
+			binary_basename = File.basename(binary_list[i].name, ".cpp")
+			binary_list[i].dep_hpp_files.each do |dep_hpp|
+				hpp_file = File.basename(dep_hpp, ".hpp")
+				hpp_path = File.dirname(dep_hpp)
+
+				if @dirroot[hpp_path].has_cpp_file("#{hpp_file}.cpp") then
+					dirroot_processed = @dirroot.name.sub(Regexp.new("\\\w+$"), "")
+					hpp_path_processed = hpp_path.sub(Regexp.new("#{dirroot_processed}"), "$(top_builddir)/")
+					hpp_path_for_log = hpp_path.sub(Regexp.new("#{dirroot_processed}"), "")
+					puts "autoautoconf:  + #{binary_basename} -> #{hpp_path_for_log}/lib#{@dirroot[hpp_path].name}.la"
+					binary_list[i].add_dep_lib("#{hpp_path_processed}/lib#{@dirroot[hpp_path].name}.la")
+					@dirroot[hpp_path].set_depending(true)
+				end
+			end
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Generate the Makefile.am files.
+	#----------------------------------------------------------------------
+	def generate_makefile_am_recursive(parentdir_string, dir)
+		if "#{parentdir_string}" == "" then
+			reldir = get_relative_dir(dir.name, @startdir)
+			puts "autoautoconf: generating #{reldir}/Makefile.am"
+		else
+			reldir = get_relative_dir("#{parentdir_string}/#{dir.name}", @startdir)
+			puts "autoautoconf: generating #{reldir}/Makefile.am"
+		end
+
+		output = "\
+#------------------------------------------------------------------------------
+# Syneight - A soft-realtime transaction monitor
+# Copyright (C) 2003-2004 The Syneight Group
+#
+# TODO: License.
+#------------------------------------------------------------------------------
+
+## Generated by autoautoconf #{$version}.\n\n"
+
+		if dir.has_subdirs then
+			output += "## Subdirectories to process.\n"
+			output += "SUBDIRS = #{beautify(dir.get_subdirs_string)}\n\n"
+		end
+
+		if dir.has_headers then
+			output += "## Header files.\n"
+			output += "noinst_HEADERS = #{beautify(dir.get_headers_string)}\n\n"
+		end
+
+		# Create library variables.
+		if dir.has_library or dir.has_testsupport_library then
+			ltlibs = ""
+			ltlibs += "lib#{dir.name}.la " if (dir.has_library)
+			ltlibs += "libts#{dir.name}.la " if (dir.has_testsupport_library)
+
+			output += "## Not to be installed helper-libraries.\n"
+			output += "noinst_LTLIBRARIES = #{beautify(ltlibs)}\n\n"
+
+			if dir.has_library then
+				output += "## Library sources.\n"
+				output += "lib#{dir.name}_la_SOURCES = #{beautify(dir.get_library_sources)}\n\n"
+
+				if dir.ldflags != "" then
+					output += "## Linker flags.\n"
+					output += "lib#{dir.name}_la_LDFLAGS = #{dir.ldflags}\n\n"
+				end
+
+				if dir.has_libraries_recursive then
+					output += "## Libraries we link against.\n"
+					output += "lib#{dir.name}_la_LIBADD = #{beautify(dir.get_libraries_recursive_string)}\n\n"
+				end
+			end
+
+			if dir.has_testsupport_library then
+				output += "## Testsupport library sources.\n"
+				output += "libts#{dir.name}_la_SOURCES = #{beautify(dir.get_testsupport_library_sources)}\n\n"
+			end
+		end
+
+		if dir.has_binary or dir.has_test then
+			binary_names = ""
+			binary_names += "#{dir.get_binary_names_string} " if (dir.has_binary)
+			binary_names += "#{dir.get_test_names_string} " if (dir.has_test)
+			output += "## The executable programs to be built.\n"
+			output += "bin_PROGRAMS = #{beautify(binary_names)}\n\n"
+		end
+
+		if dir.has_binary then
+			dir.get_binaries.each do |binary|
+				output += "## Binary '#{binary.execname}'.\n"
+				output += "#{binary.execname}_SOURCES = #{binary.name}\n"
+				libraries = "lib#{dir.name}.la #{binary.get_dep_libs_string}"
+				output += "#{binary.execname}_LDADD = #{beautify(libraries)}\n\n"
+			end
+		end
+
+		if dir.has_test then
+			dir.get_tests.each do |test|
+				output += "## Test '#{test.execname}'.\n"
+				output += "#{test.execname}_SOURCES = #{test.name}\n"
+				libraries = "lib#{dir.name}.la #{test.get_dep_libs_string}"
+				libraries += " libts#{dir.name}.la" if (dir.has_testsupport_library)
+				output += "#{test.execname}_LDADD = #{beautify(libraries)}\n\n"
+			end
+		end
+
+		if dir.has_binary or dir.has_test then
+			dep_targets = Array.new
+			if dir.has_binary then
+				dir.get_binaries.each do |binary|
+					binary.get_dep_libs_list.each do |dep_lib|
+						binary_dep = dep_targets.find { |lib| "#{dep_lib}" == "#{lib}" }
+						dep_targets.push(dep_lib) if ("#{binary_dep}" == "")
+					end
+				end
+			end
+			if dir.has_test then
+				dir.get_tests.each do |test|
+					test.get_dep_libs_list.each do |dep_lib|
+						test_dep = dep_targets.find { |lib| "#{dep_lib}" == "#{lib}" }
+						dep_targets.push(dep_lib) if ("#{test_dep}" == "")
+					end
+				end
+			end
+
+			output += "## Targets to resolve dependencies.\n"
+			dep_targets.each do |dep_target|
+				dep_target_dir = File.dirname(dep_target)
+				dep_target_file = File.basename(dep_target)
+				output += "#{dep_target}:\n"
+				output += "	@cd #{dep_target_dir} && \\\n"
+				output += "	$(MAKE) #{dep_target_file}\n\n"
+			end
+		end
+
+		if dir.depending then
+			dir.get_libraries_recursive_list.each do |library|
+				library_dir = File.dirname(library)
+				library_file = File.basename(library)
+				output += "#{library}:\n"
+				output += "	@cd #{library_dir} && \\\n"
+				output += "	$(MAKE) #{library_file}\n\n"
+			end
+		end
+
+		# Makefile.common include.
+		output += "# Include some common Makefile fragments.\n"
+		output += "include $(top_srcdir)/Makefile.common\n\n"
+
+		# Write the generated contents to the respective Makefile.am file.
+		if parentdir_string != ""
+			file = open("#{parentdir_string}/#{dir.name}/Makefile.am", "w")
+		else
+			file = open("#{dir.name}/Makefile.am", "w")
+		end
+		file.write(output)
+		file.close
+
+		dir.subdirs.each do |subdir|
+			if "#{parentdir_string}" == "" then
+				generate_makefile_am_recursive("#{dir.name}", subdir)
+			else
+				generate_makefile_am_recursive("#{parentdir_string}/#{dir.name}", subdir)
+			end
+		end
+	end
+
+	#----------------------------------------------------------------------
+	# Generate the Makefile.am files.
+	#----------------------------------------------------------------------
+	def generate_makefile_ams
+		generate_makefile_am_recursive("", @dirroot)
+	end
+end
+
+#------------------------------------------------------------------------------
+# Autoautoconf class.
+#------------------------------------------------------------------------------
+class Autoautoconf
+	#----------------------------------------------------------------------
+	# Constructor.
+	#----------------------------------------------------------------------
+	def initialize(startdir)
+		@version    = $version
+		@program    = 'autoautoconf'
+		@bugreports = '\
+Uwe Hermann <uh1763@hermann-uwe.de>, 
+Piotr Esden-Tempski <esdentem@in.tum.de>'
+
+		@startdir   = startdir
+	end
+	
+	#----------------------------------------------------------------------
+	# Print version.
+	#----------------------------------------------------------------------
+	def print_version
+		puts "#{@program} #{@version}"
+	end
+
+	#----------------------------------------------------------------------
+	# Print a help screen.
+	#----------------------------------------------------------------------
+	def print_usage
+		puts "\
+#{@program} #{@version}, Copyright (C) 2004 Uwe Hermann, Piotr Esden-Tempski
+
+#{@program} comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under the terms of
+the GNU General Public License. See COPYING for details.
+
+Traverse all subdirectories of the dirname(s) given on the command-line and
+generate a Makefile.am for each of them.
+
+Usage: #{@program} [options] dirname(s)...
+ -h, --help                  Show this help.
+ -v, --version               Print the version number.
+
+Report bugs to:
+#{@bugreports}"
+	end
+
+	#----------------------------------------------------------------------
+	# Parse commandline arguments.
+	#----------------------------------------------------------------------
+	def parse_commandline
+		opts = GetoptLong.new(
+			["--help", "-h", GetoptLong::NO_ARGUMENT],
+			["--version", "-v", GetoptLong::NO_ARGUMENT]
+		)
+
+		opts.each do |opt, arg|
+			case opt
+				when "--help" then print_usage; exit
+				when "--version" then print_version; exit
+				else raise "Invalid option '#{opt}'"
+			end
+		end
+
+		@dirs = ARGV.collect { |dir| File.expand_path(dir) }
+	end
+
+	#----------------------------------------------------------------------
+	# Main run method.
+	#----------------------------------------------------------------------
+	def run
+		parse_commandline
+
+		includedir = File.expand_path(".")
+		directory_tree = Directory_Tree.new("#{includedir}", "#{@dirs}")
+
+		puts "autoautoconf: generating Makefile.am files"
+		directory_tree.generate_makefile_ams
+	end
+
+end
+
+
+#------------------------------------------------------------------------------
+# Main program.
+#------------------------------------------------------------------------------
+
+autoautoconf = Autoautoconf.new('syneight')
+
+autoautoconf.run
+

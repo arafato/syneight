@@ -1,0 +1,177 @@
+-------------------------------------------------------------------------------
+Readme
+-------------------------------------------------------------------------------
+
+What Is Syneight?
+----------------
+
+Syneight is a soft-realtime transaction monitor.
+
+
+User Requirements
+-----------------
+
+ * A modern UNIX system
+ * GNU make (http://www.gnu.org/software/make/)
+ * A C++ compiler (for example gcc (http://gcc.gnu.org))
+ * Log4Cpp (http://log4cpp.sourceforge.net/)
+ * ACE (http://www.cs.wustl.edu/~schmidt/ACE.html)
+ * Boost >= 1.29.0 (http://www.boost.org/)
+
+
+Documentation Generation Requirements
+-------------------------------------
+
+ * A latex typesetting suite distribution
+   (http://www.tug.org/interest.html#free)
+ * Doxygen documentation generation tool (http://www.doxygen.org)
+ * Dot graph drawing tool (http://www.research.att.com/sw/tools/graphviz/)
+   (needed by doxygen)
+
+
+Developer Requirements
+----------------------
+
+ * Autoconf >= 2.57 (http://www.gnu.org/software/autoconf/)
+ * Automake >= 1.7 (http://www.gnu.org/software/automake/)
+ * Libtool >= 1.5 (http://www.gnu.org/software/libtool/)
+ * Ruby (http://www.ruby-lang.org/en/)
+
+
+Building And Installing Syneight
+-------------------------------
+
+$ svn up
+
+Update to the most recent svn version of the code.
+
+$ ./bootstrap
+
+Bootstrap the build environment.
+
+$ cd build/audit
+$ ../../configure --enable-buildtype=audit --disable-static
+
+Configure the build environment.
+
+You can create a debug build or a binary build by cd'ing into build/debug
+or build/binary and using --with-buildtype=debug or --with-buildtype=binary
+respectively.
+The --disable-static option disables the building of static libraries (i.e.
+only shared libraries will be built), which makes the compile faster.
+You can also additionally enable/disable more restrictive/verbosive compiler
+options by using the configure option --enable-debug/--disable-debug.
+
+$ make
+
+This will build all programs and libraries and place the object files
+under build/audit (or build/debug or build/binary). This way you can have
+several builds at one time, each with its own object-files and dependencies.
+
+$ make install
+
+This will install all programs, libraries and include-files into /usr/local.
+You can change the default patch via several options provided by configure.
+
+The most important ones:
+  --prefix=DIR
+  --includedir=DIR
+  --bindir=DIR
+  --datadir=DIR
+  --sysconfdir=DIR
+
+Run './configure --help' for the complete list.
+
+See also INSTALL for further details.
+
+
+OS-specific Installation Instructions
+-------------------------------------
+
+ * Visual C++ Compiler:
+    * Run configure with these options:
+      # CC=cl CXX=cl CXXFLAGS=-EHsc ../../configure
+
+
+Makefile Targets
+----------------
+
+After running ./configure, you can use the following Makefile targets:
+
+make all                 Build the most important parts of Syneight. This
+                         doesn't build the documentation, for example.
+
+make docs                Build the documentation in PostScript and PDF format.
+make docs-ps             Build the documentation in PostScript format.
+make docs-pdf            Build the documentation in PDF format.
+
+make check               Run the Syneight testsuite.
+
+make dist                Create both, a tar.gz distribution tarball and
+                         a tar.bz2 distribution tarball.
+make dist-gzip           Create a tar.gz distribution tarball.
+make dist-bzip2          Create a tar.bz2 distribution tarball.
+make distcheck           Create both, a tar.gz distribution tarball and
+                         a tar.bz2 distribution tarball and check that
+                         the distribution will actually work (i.e. build
+                         the applications/libraries, run the testsuite etc.).
+
+make mostlyclean         Remove files built by make, which we might want to
+                         rebuild (e.g. *.o files).
+make clean               Additionally remove other files built by make.
+make distclean           Additionally remove files built by ./configure.
+make maintainer-clean    Additionally remove all files which can be
+                         automatically built using certain tools, e.g.
+                         autoconf, automake, latex etc.
+
+make install             Install Syneight.
+make install-strip       Install stripped binaries/libraries of Syneight.
+make uninstall           Uninstall Syneight.
+
+
+Supported Platforms
+-------------------
+
+Syneight was successfully tested on the following platforms:
+
+ Rev. | Arch.     | CPU                  | OS                 | Kernel
+-------------------------------------------------------------------------------
+ 531  | ppc       | G4 800MHz            | Gentoo 1.4.3.13    | Linux 2.6.3
+ ...  | i686      | Celeron 1.7GHz       | Debian/unstable    | Linux 2.6.3
+ 701  | i686      | Pentium 4 CPU 3.2GHz | Fedora Core Rel. 1 | Linux 2.4.22
+ 701  | alpha     | Alpha EV56           | Debian/unstable    | Linux 2.2.20
+ ...  | sparc64   | TI UltraSparc IIi    | Debian/testing     | Linux 2.4.24
+ 707  | i686      | Pentium 4 CPU 3.2GHz | cygwin nt 5.1      |  ----------
+
+If you tested Syneight on another platform than those listed here, please
+tell us, so we can add it here.
+
+You can get the architecture type with 'uname -m' and other useful info
+with 'uname -a' and 'cat proc/cpuinfo', at least on most Linux systems.
+
+
+License
+-------
+
+TODO
+
+
+Mailinglists
+------------
+
+We currently have three mailinglists:
+
+ * syneight-devel: Used for development discussion.
+ * syneight-svn: Used for svn commit messages.
+ * syneight-svn-verbosive: As above, but with commit diffs attached.
+
+You can subscribe/unsubscribe or view the archives at:
+
+http://www.syneight.informatik.tu-muenchen.de/mailman/listinfo
+
+
+Homepage
+--------
+
+http://syneight.informatik.tu-muenchen.de
+

@@ -1,0 +1,163 @@
+#!/usr/bin/env python
+#------------------------------------------------------------------------------
+# svn2cl -- create a GNU-style ChangeLog from the output of 'svn log'.
+# Copyright (C) 2003 Uwe Hermann
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#------------------------------------------------------------------------------
+
+""" Create a GNU-style ChangeLog from the output of 'svn log'. """
+
+#------------------------------------------------------------------------------
+# Imports.
+#------------------------------------------------------------------------------
+import os
+import time
+import sys
+import re
+import string
+import getopt
+
+
+#------------------------------------------------------------------------------
+# Configuration.
+#------------------------------------------------------------------------------
+
+time_format = "%a, %d %b %Y %H:%M:%S %Z"
+
+changelog_header = """\
+-------------------------------------------------------------------------------
+ChangeLog
+-------------------------------------------------------------------------------
+"""
+
+
+#------------------------------------------------------------------------------
+# Developer names and email addresses.
+#------------------------------------------------------------------------------
+developers = {
+"root"        : 'Piotr Esden-Tempski <pe1724@bingo-ev.de>',
+"christian"   : 'Christian Schallhart <schallha@cs.tum.edu>',
+"schallha"    : 'Christian Schallhart <schallha@cs.tum.edu>',
+"esden"       : 'Piotr Esden-Tempski <pe1724@bingo-ev.de>',
+"weasel"      : 'Piotr Esden-Tempski <pe1724@bingo-ev.de>',
+"esdentem"    : 'Piotr Esden-Tempski <pe1724@bingo-ev.de>',
+"hermanuw"    : 'Uwe Hermann <uh1763@hermann-uwe.de>',
+"daniel"      : 'Daniel Reutter <reutter@in.tum.de>',
+"reutter"     : 'Daniel Reutter <reutter@in.tum.de>', 
+"arafat"      : 'Oliver Arafat <arafat@in.tum.de>',
+"fuchsto"     : 'Tobias Fuchs <fuchsto@in.tum.de>',
+"meiera"      : 'Andreas V. Meier <meiera@in.tum.de>',
+}
+
+
+#------------------------------------------------------------------------------
+# Constants.
+#------------------------------------------------------------------------------
+PROGRAM      = "svn2cl"
+AUTHOR       = "Uwe Hermann"
+AUTHOR_EMAIL = "uh1763@hermann-uwe.de"
+VERSION      = "0.1"
+
+BUGREPORTS   = "%s <%s>" % (AUTHOR, AUTHOR_EMAIL)
+COPYRIGHT    = "Copyright (C) 2003-2004 %s" % (AUTHOR)
+
+USAGE = """
+%s %s, %s
+
+%s comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under the terms of
+the GNU General Public License. See COPYING for details.
+
+Usage: %s [Options]
+ -h, --help                  Show this help.
+ -v, --version               Print the version number.
+
+Report bugs to %s.
+""" % (PROGRAM, VERSION, COPYRIGHT, PROGRAM, PROGRAM, BUGREPORTS)
+
+
+#------------------------------------------------------------------------------
+# Parse the commandline arguments.
+#------------------------------------------------------------------------------
+def parse_arguments():
+    """Parse the commandline arguments."""
+    try:
+        options, args = getopt.getopt(sys.argv[1:], 'hv', ['help', 'version'])
+    except getopt.GetoptError, error:
+        print "Error:", error
+        sys.exit(1)
+    for opt in options:
+        if opt[0] in ('-h', '--help'):
+            print USAGE
+            sys.exit(0)
+        elif opt[0] in ('-v', '--version'):
+            print PROGRAM, VERSION
+            sys.exit(0)
+
+
+#------------------------------------------------------------------------------
+# The main program.
+#------------------------------------------------------------------------------
+def main():
+    """The main program."""
+
+    parse_arguments()
+
+    if len(sys.argv) > 1:
+        targets = sys.argv[1]
+    else:
+        targets = "."
+
+    file = os.popen('svn log -v %s' % targets)
+    filecontents = string.join(file.readlines())
+
+    # SVN might have \r\n and \n line-endings. Replace \r\n with \n so our
+    # output is consistent.
+    filecontents = re.sub('\r\n', '\n', filecontents)
+
+    comp = re.compile("^---+$")
+    parse_next_line = 1
+
+    print changelog_header
+
+    # Main loop.
+    for line in filecontents.split('\n'):
+        line = line.strip()
+        if comp.search(line) != None:
+            parse_next_line = 1
+            print
+        elif parse_next_line == 1 and line != '':
+            parse_next_line = 0
+
+            words = re.split('\s+', line)
+
+            dateparts = re.split('-', words[4]) + re.split(':', words[5])
+            for i in range(len(dateparts)):
+                dateparts[i] = int(dateparts[i])
+            timetupel = dateparts + [0, 0, 1]
+            date = time.strftime(time_format, timetupel)
+
+            developer = words[2]
+            lines = words[12]
+            revision = words[0]
+
+            print "%s %s\n" % (date, developers[developer])
+            print "\tRev: %s. Lines: %s\n" % (revision, lines)
+        else:
+            print '\t' + line;
+
+if __name__ == "__main__": main()
+

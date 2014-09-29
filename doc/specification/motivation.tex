@@ -1,0 +1,383 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Motivation}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{What is \SYNEIGHT}
+Leading idea: ``Abstract description of \SYNEIGHT''.
+
+Pure prose.
+
+In short:
+\begin{description}
+\item[Domain independent] define -- use C++ Network Programming,
+Schmidt, page 8
+
+``Common middleware services augment distribution middleware by defining
+high-level domain independent services, such as event notification,
+logging, persistence, security, and recoverable transactions. Whereas
+distribution middleware focuses largely on managing end-system resources
+in support of an object-oriented distributed programming model, common
+middleware services focus on allocating, scheduling, and coordinating
+various resources throughout a distributed system. Without common
+middleware services, these end-to-end capabilities would have to be
+implemented ad hoc by each networked application.''
+
+\item[Transaction oriented] use the term extended atomic transactions
+\item[Soft real-time] define -- Kopetz
+\item[Cluster / SMP] SMP: uniform memory, cluster. Clustering for
+scalability and availability. We use SMP machines as a nodes since to
+keep the number of nodes small -- and thus, the communication
+overhead.
+\end{description}
+
+Think about ordering of these issues. 
+
+Problem: Not \MMORGS, not \NVES. These two are motivations which we
+will discuss in great length in this chapter -- but they are not
+defining \SYNEIGHT. Thus, they do not appear in this section.
+
+10 Sentences
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OLD VERSION OF THIS SECTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%\section{What is \SYNEIGHT}
+%%
+%%\SYNEIGHT is a transaction and object oriented middleware which
+%%empathizes SMP-clustering and soft-realtime processing. Originally,
+%%\SYNEIGHT was motivated by networked virtual environments
+%%(\NVES), in particular by large-scale simulations developed by the
+%%entertainment industry.
+%%%
+%%Currently, so-called Massively Multiplayer Role Games (\MMORGS) are
+%%gaining more and more importance in this industry (ADDREF). The notion
+%%of \MMORGS will be explained in detail in \vref{sec:I:motivation:mmorgs}.
+%%%
+%%State of the art \MMORGS are challenging in various ways. While the
+%%gaming industry used to adopt (at least partially) an ad-hoc style of
+%%development for traditional game projects, these applications require a
+%%much more rigorous approach.
+%%%
+%%
+%%%%% A \MMORG is demanding wrt.~scalability, reliability, modifiability. 
+%%%%% 
+%%%%% 
+%%%%% These simulations are challenging in various ways. Scalability,
+%%%%% modifiability, extensibility, 
+%%%%% are among the most the
+%%%%% important goals.
+%%
+%%
+%%%
+%%% scalability
+%%% modifiability
+%%%    extensibility
+%%
+%%% dependability reliability fault tolerance
+%%
+%%% realtime
+%%
+%%
+%%% leeway for experimentation
+%%% inherent game logic (nothing should be unmotivated)
+%%%    seamlessness 
+%%
+%%%
+%%% development of A mmorg -- quest for a domain-independent base, to
+%%% ensure modifiability, extensibility... together with the need for a
+%%% uniform interface formulation gave raise to the idea of
+%%% \SYNEIGHT. 
+%%
+%%In this chapter, we will review \NVES, \MMORGS and the currently
+%%available technology. Based upon this outline, we will argue, that a
+%%new approach is necessary to solve the inherent problems of this
+%%application domain. 
+%%%
+%%This domain comes with a broad and general set of
+%%requirements, which cannot be solved independently from each other.
+%%% --> against tool assembly
+%%Furthermore, we regard a generalized approach as necessary to ensure
+%%the required flexibility and modifiability. Fortunately, \NVES allow
+%%to obtain a condensed and abstract set of fundamental
+%%requirements. These requirements form the starting point of the
+%%\SYNEIGHT middleware which is projected to serve as such an abstract
+%%basis for \NVES in terms of a domain-independent middleware.
+%%
+%%%ranging from classical software engineering goals such
+%%%as modifiability and extensibility to more specific requirements such
+%%%as soft realtime processing and 
+%%
+%%% no throwing together of existing tools
+%%% stability (wrt. interface, internals, ...) by orthogonalization
+%%% (i.e., generalization)
+%%% 
+%%
+%%%% 
+%%%% 
+%%%% 
+%%%% \SYNEIGHT is a middleware, so before we can tell what \SYNEIGHT exactly is
+%%%% we have to explain what a middleware is. Wikipedia defines middleware in
+%%%% the following way:
+%%%% 
+%%%% \begin{definition} 
+%%%% Middleware in computing terms is used to describe a software agent
+%%%% acting as an intermediary, or as a member of a group of intermediaries,
+%%%% between different components in a transactional process.  The classic
+%%%% example of this is the separation which is attained between the client
+%%%% user and the database in a client/server situation.  The reason for
+%%%% introducing middleware in such a situation is to better service client
+%%%% requests by reducing the number of resource-expensive connections to the
+%%%% database and more efficiently passing the requested data back.  
+%%%% \end{definition}
+%%%% 
+%%%% So in short it is an API or software collection that hides complexity.
+%%%% 
+%%%% There are two kinds of middleware. Domain dependant and domain in
+%%%% dependant middleware. Domain dependant means that it is designed for a
+%%%% specific application and can be used only for one application or in best
+%%%% case for only one specific kind of applications. In contrast domain
+%%%% independent middleware can be used by many different kinds of
+%%%% applications. \SYNEIGHT is the second. A domain independent middleware. 
+%%%% 
+%%%% But what 
+%%%% 
+%%%More specifically \SYNEIGHT is a domain independent middleware. That
+%%%means that it can be used in a variety of domains like virtual
+%%%environments, entertainment, education, cooperative work or science. In
+%%%contrary to that there are also domain dependant middleware. This kind
+%%%of middleware would be usable only for one specific kind of application
+%%%like military simulations.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% END OF THE OLD VERSION OF THIS SECTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Motivating Application Domain}
+Leading idea: ``Which domain, why is the domain interesting, which
+domain structure.''
+
+Better Structure (convert this section here into this form):
+\begin{itemize}
+	\item MMORGS -- A new Entertainment World
+	\begin{itemize}
+		\item Define MMORGS
+		\item ``Why MMORGS''
+		\item short: the rest of the section
+	\end{itemize}
+	\item ''what are nves'' with applications
+	\item MMORGS in detail
+	\begin{itemize}
+		\item maybe more detailed definition
+		\item MMORGS are a special case of NVEs
+		\item industrial interest
+  		\item characteristics \& challenges
+		\item feasibility study
+	\end{itemize}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\subsection{\MMORGS -- A new Entertainment World}
+Needs a better catchy expression:
+\begin{itemize}
+	\item A new Entertainment World
+	\item The new Challenge
+	\item \dots
+\end{itemize}
+
+\subsubsection{What are \MMORGS}
+Definition \ldots
+
+\subsubsection{The interest in \MMORGS}
+\begin{itemize}
+	\item Academic Interest
+	\begin{itemize}
+		\item Subsumes Many general NVE Problems
+		\item It is a game:
+		\item Incredible wishlist
+		\item Tolerant ( The world is not going under when something crashes )
+		\item Bottomline: Interesting research ground
+	\end{itemize}
+	\item Industrial Interest
+	\begin{itemize}
+		\item Feasibility study
+	\end{itemize}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{What are \NVES}
+
+\MMORG is a specialization of \NVE.
+
+based on virtual environments papers
+
+adding networking (cf. overview paper) -- usage of networking in terms
+of a, load distribution, and b, geographically dispersed access
+
+read the stuff! /usr/local/data/syneight/literature/nve/survey, read
+the papers, check out what's going on.
+
+Also integrate the applications:
+\begin{itemize}
+        \item Military Simulations
+        \item CSCW ( Computer Supported Cooperative Work for example
+              Virtual meetings)
+        \item Educational
+        \item Entertainment
+        \item \dots
+\end{itemize}
+
+Application Elements? Leave blank in the first run.
+\begin{itemize}
+        \item X-Reality
+        \item Augmented Reality
+        \item Simulation
+        \item \dots
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\MMORGS in detail}
+Characteristics \& Challenges
+\begin{itemize}
+	\item maybe more detailed definition
+	\item MMORGS are a special case of NVEs
+	\item industrial interest
+	\item characteristics \& challenges
+	\item feasibility study
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The services of a \MMORG}
+Leading Idea: ``OK. So that's the way you can structure such a
+biest.''
+
+\textbf{Feasibility Study}
+
+Show the graphic about domains in a MMORG system\\ Show the
+localization of syneight in that model
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Production Domain}
+
+describe and show requirements
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Maintenance Domain}
+
+describe and show requirements
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Gaming Domain}
+
+describe and show requirements
+
+\begin{enumerate}
+\item Abstract Requirements
+\item Gaming has stable requirements
+\item Production/Maintainer domains have unstable requirements
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Approach of \SYNEIGHT}
+Leading idea: ``Where is \SYNEIGHT: We have an idea of the domain, we
+have a very abstract idea of \SYNEIGHT, how do these concepts match?
+What is \SYNEIGHT doing in the context of the domain specific services
+of a \MMORG.''
+
+Idea. Starting from the domain specific services, we go refine the
+concept of \SYNEIGHT subsequently. We give an informal and quite
+abstract description of the interface. Then we introduce stepwise
+other central forces such as target platforms. And we describe how we
+reflected these forces within \SYNEIGHT. The end of the Section should
+give the reader a summarizing, lengthy definition of \SYNEIGHT (not
+necessarily marked as a formal definition).
+
+
+\SYNEIGHT covers that and that and leaves that and that issue to the
+higher levels.
+
+And why we do this selection. 
+\begin{itemize}
+\item remember the conclusion of the last section.
+\item then we can support other \NVES -- you could say, \SYNEIGHT is
+the synchronization essence of an \NVE.
+\end{itemize}
+
+%\subsection {\SYNEIGHT Load Distribution}
+
+use this list for argumentation: Load Distribution (LD)
+\begin{itemize}
+        \item NVEs of a certain size require Clusters
+        \item LD more fundamental
+        \item Traffic slenderizing
+        \item Data Reckoning and Data Bulking
+              $\Rightarrow$ Internet (Traffic costs
+              really a lot!)\\
+              $\Rightarrow$ Good strategies are App/Game
+              specific (Domain specific)
+	\item Ideally it should be possible to have "Virtual Machine"
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Alternatives}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{From Scratch}
+
+One-Time only shot >\_< (KAPUTT)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{\MMORG Engines}
+
+\begin{itemize}
+	\item Domain specific (\_NOT\_FOR\_US\_)
+	\item Inferior
+	\item List of available engines: Zyta, Butterfly (Ask A.V.M.)
+\end{itemize}
+
+Too restrictive. Does not deal with the chellanges. Are not Seamless!
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Existing Technologies}
+
+\subsubsection{Relational and Object Oriented Data Base Systems}
+
+Not built for Seamless Real Time Cluster systems with OO\\
+Client server structure, we are P2P
+
+\subsubsection{Distributed Shared Memory}
+
+Locking?\\
+Not built for Seamless Real Time Cluster systems with OO\\
+Uncontrolled Growth
+
+\subsubsection{Message Passing Systems and Frameworks}
+
+list multiple solutions: PVM MP Mosix ...\\
+easy
+
+Describe 3-4 most known representatives
+\begin{itemize}
+	\item Not OO
+	\item Not Seamless
+	\item Intra-process syncronisation
+	\item Not uniform
+\end{itemize}
+
+% vim:ts=4:sw=4

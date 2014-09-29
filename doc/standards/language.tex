@@ -1,0 +1,76 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{C++}
+\label{cha:C++}
+
+
+\section{Basics}
+\label{sec:basics}
+
+
+\SYNEIGHT's language of choice will be C++ for reasons that are not
+entirely in the scope of this document. For some of them, read
+section \vref{sec:goal} in this document. The coding guidelines will base on
+the book \emph{Large Scale C++ Software Design} by John Lakos.
+
+
+\section{Indentation Style}
+\label{sec:indentation-style}
+
+All indentation should use tabs in favor for spaces. The reason is
+that a mixture of tabs and spaces in a single file can easily produce
+faulty indentation and lead to further errors in human reading. The
+decision for tabs before spaces is that tabs can display the width
+desired.
+
+
+\section{Compatibility}
+\label{sec:compatibility}
+
+I had a dream -- C++ is a uniform language across a large number of
+platforms. It is not. It is painful to maintain C++-code in a portable
+manner. This section is defining which features of 
+\begin{itemize}
+\item the C++-language,
+\item required tools for the build process,
+\item and the used libraries 
+\end{itemize}
+we require for \SYNEIGHT. After reading this statement, you will think
+that it is \textbf{absolutely impossible to state all these
+  requirements explicitly.} 
+%
+Therefore, we adopt the following approach. First, we will list some
+central and required features explicitly. Such a list will never
+ensure, that \SYNEIGHT is really compiling on a certain platform. On the
+other hand, it will rule out platforms which do not satisfy these
+requirements.
+%
+More concretely, we will categorize platforms as follows.
+\begin{description}
+\item[supported.] \SYNEIGHT is actively supported on these platforms. 
+\item[tested.] \SYNEIGHT has been compiled on the given platform and
+  its testsuite has been executed successfully. 
+\item[broken.] \SYNEIGHT is known not to work on the given platform.
+\end{description}
+
+The list of central and required features will be based on other
+portable software artifacts. As starting point we will use the
+\texttt{boost} feature classification.
+
+
+\section{Portability Guidelines}
+\label{sec:portability-guidelines}
+
+TODO.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End: 
+% vim:ts=4:sw=4

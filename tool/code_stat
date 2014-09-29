@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+
+$lines = 0
+$code_lines = 0
+$empty_lines = 0
+$comment_lines = 0
+
+$directory = "syneight"
+
+def read_files(dir)
+	Dir.chdir("#{dir}")
+	Dir.foreach(".") do |entry|
+		if "#{entry}" != "." and "#{entry}" != ".." \
+		and "#{entry}" != ".svn" and "#{entry}" != "CVS" then
+			if File.ftype("#{Dir.pwd}/#{entry}") == "directory"
+				read_files("#{entry}")
+			else
+				if "#{entry}" =~ /.*\.[ch]pp/ then
+					file = open("#{Dir.pwd}/#{entry}", "r")
+					comment = false
+					while file.gets
+						$lines = $lines + 1
+						if comment then
+							$comment_lines = $comment_lines + 1
+							if $_ =~ /\*\// then
+								comment = false
+							end
+						else
+							case $_
+							when /^\s*\/\*/
+								$comment_lines = $comment_lines + 1
+								if $' !~ /\*\// then
+									comment = true
+								end
+							when /^\s*\/\//
+								$comment_lines = $comment_lines + 1
+							when /^\s*$/
+								$empty_lines = $empty_lines + 1
+							when /\/\*/
+								$comment_lines = $comment_lines + 1
+								$code_lines = $code_lines + 1
+								if $' !~ /\*\// then
+									comment = true
+								end
+							when /\/\//
+								$comment_lines = $comment_lines + 1
+								$code_lines = $code_lines + 1
+							else
+								$code_lines = $code_lines + 1
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	Dir.chdir("..")
+end
+read_files("#{$directory}")
+
+puts "lines:\t\t#{$lines}\n\
+code lines:\t#{$code_lines}\n\
+empty lines:\t#{$empty_lines}\n\
+comment lines:\t#{$comment_lines}"

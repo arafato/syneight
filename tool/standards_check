@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+
+def vim_modeline(file)
+	has_vim_modeline = false
+	file_content = Array.new
+
+	file_handle = open("#{file}", "r")
+	while line = file_handle.gets
+		file_content.push("#{line}");
+		if line =~ / vim:/
+			if line !~ /vim:ts=4:sw=4$/
+				puts "#{file}: seems to have a wrong vim modeline '#{line.chomp}'"
+			end
+			has_vim_modeline = true
+		end
+	end
+	file_handle.close
+
+	if !has_vim_modeline
+		file_handle = open("#{file}", "w")
+		file_content.each do |line|
+			file_handle.write("#{line}")
+		end
+		if "#{file}" =~ /\.[ch]pp/
+			puts "#{file}: adding vim modeline '// vim:ts=4:sw=4'\n"
+			file_handle.write("// vim:ts=4:sw=4\n")
+		elsif "#{file}" =~ /\.tex/
+			puts "#{file}: adding vim modeline '% vim:ts=4:sw=4'\n"
+			file_handle.write("% vim:ts=4:sw=4\n")
+		else
+			puts "#{file}: I do not know how to add a vim modeline\n"
+		end
+
+		file_handle.close
+	end
+end
+
+def edit_file(file)
+	vim_modeline(file)
+end
+
+def check_file_recursive(dir)
+	Dir.foreach("#{dir}/") { |file|
+		if "#{file}" !~ /\./ && "#{file}" !~ /\.\./ && File.ftype("#{dir}/#{file}") == "directory"
+			check_file_recursive("#{dir}/#{file}")
+		elsif File.ftype("#{dir}/#{file}") == "file" && "#{file}" =~ /.*\.[ch]pp|.*\.tex/
+			edit_file("#{dir}/#{file}");
+		end
+	}
+end
+
+dirs = ARGV.collect { |dir| File.expand_path(dir) }
+if dirs.length == 0
+	puts "Please provide directory's at commandline."
+	exit
+end
+
+dirs.each do |dir|
+	$startdir = dir
+	check_file_recursive("#{$startdir}");
+end
+
+# vim:ts=4:sw=4

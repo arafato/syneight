@@ -1,0 +1,102 @@
+#------------------------------------------------------------------------------
+# Syneight - A soft-realtime transaction monitor
+# Copyright (C) 2003-2004 The Syneight Group
+#
+# TODO: License.
+#------------------------------------------------------------------------------
+
+# The library directory for the Syneight TeX files.
+SYNEIGHT_TEXLIBDIR = $(top_srcdir)/doc/lib
+
+# Create a two-sided PostScript file.
+%.twosided.ps: %.ps
+	@if test "$(A2PS)" = "no"; then \
+	  echo "A2ps not found. Cannot build documentation."; exit 1; \
+	else \
+	  export TEXINPUTS=".:$(srcdir):$(SYNEIGHT_TEXLIBDIR):"; \
+	  $(A2PS) --columns 2 -a 1,3- -o $@ < $<; \
+	fi;
+
+# Create a PDF from LaTeX source.
+%.pdf: %.tex $(SYNEIGHT_TEXDEPENDS)
+	@if test "$(PDFLATEX)" = "no"; then \
+	  echo "Pdflatex not found. Cannot build documentation."; exit 1; \
+	else \
+	  export TEXINPUTS=".:$(srcdir):$(SYNEIGHT_TEXLIBDIR):"; \
+	  $(PDFLATEX) $<; \
+	  if test "x$(SYNEIGHT_BIBFILE)" != "x"; then \
+	    bibfile=`echo $(SYNEIGHT_BIBFILE) | sed s/\.bib//`; \
+	    $(BIBTEX) $$bibfile; \
+	  fi; \
+	  $(PDFLATEX) $<; \
+	  $(PDFLATEX) $<; \
+	fi;
+
+# Create a PostScript file from DVI.
+%.ps: %.dvi
+	@if test "$(DVIPS)" = "no"; then \
+	  echo "Dvips not found. Cannot build documentation."; exit 1; \
+	else \
+	  export TEXINPUTS=".:$(srcdir):$(SYNEIGHT_TEXLIBDIR):"; \
+	  $(DVIPS) -o $@ $<; \
+	fi;
+
+# Create a DVI file from LaTeX source.
+# Note: LaTeX files with a TOC need three runs to have correct page references.
+%.dvi: %.tex $(SYNEIGHT_TEXDEPENDS)
+	@if test "$(LATEX)" = "no"; then \
+	  echo "Latex not found. Cannot build documentation."; exit 1; \
+	else \
+	  export TEXINPUTS=".:$(srcdir):$(SYNEIGHT_TEXLIBDIR):"; \
+	  $(LATEX) $<; \
+	  if test "x$(SYNEIGHT_BIBFILE)" != "x"; then \
+	    bibfile=`echo $(SYNEIGHT_BIBFILE) | sed s/\.bib//`; \
+	    $(BIBTEX) $$bibfile; \
+	  fi; \
+	  $(LATEX) $<; \
+	  $(LATEX) $<; \
+	fi;
+
+# Doxygen documentation target.
+
+# Needed to generate pre-requests for doxygen.conf target.
+sed_regexp="'s,INPUT.*=,,; s,\([^[:blank:]]\+\),$(srcdir)/\1,'"
+
+doxygen: doxygen.log
+
+doxygen.conf: $(shell find $(shell grep -s "INPUT[[:space:]]*=" $(srcdir)/doxygen.conf.in | sed "$(sed_regexp)" ) -name "*.cpp" -o -name "*.hpp" ) $(srcdir)/doxygen.conf.in
+	@echo ""
+	@echo ">>> GENERATING doxygen.conf"
+	sed "s,<top_builddir>,$(top_builddir),; s,^\(INPUT[[:space:]]*=\).*\$$,\1 $(shell find $(shell grep -s "INPUT[[:space:]]*=" $(srcdir)/doxygen.conf.in | sed "$(sed_regexp)" ) -name "*.cpp" -o -name "*.hpp" ),; s,<perl_path>,$(PERL)," < $(srcdir)/doxygen.conf.in > $@
+
+doxygen.log: doxygen.conf
+	@echo ""
+	@echo ">>> GENERATING doxygen documentation"
+	$(DOXYGEN) $< > $@
+
+# Doxygen support.
+doxy: doxy-lib
+
+doxy-lib:
+	@DOXYGEN@ $(top_builddir)/doc/api/lib/doxygen-lib.conf
+
+doxy-ts:
+	@DOXYGEN@ $(top_builddir)/doc/api/lib.ts/doxygen-ts.conf
+
+doxy-t:
+	@DOXYGEN@ $(top_builddir)/doc/api/lib.t/doxygen-t.conf
+
+
+# Additional include paths for Syneight.
+# AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/build/include
+
+# Files which should be removed by 'make clean'.
+clean-local:
+	-rm -f *~ *.log *.dvi *.bit *.aux *.out
+	-rm -f *.toc *.lof *.lot *.idx *.glo *.bbl *.blg *.ind *.ilg
+	-rm -f doxygen.conf doxygen.log
+
+# Files which should be removed by 'make maintainer-clean'.
+maintainer-clean-local:
+	-rm -f Makefile.in
+

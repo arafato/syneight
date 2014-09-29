@@ -1,0 +1,1226 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Annotations}
+\label{cha:annotations}
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+The purpose of the annotations which will be used within \SYNEIGHT is
+twofold:
+\begin{itemize}
+\item Make assumptions explicit and checkable. Since some assumptions
+  are very expensive to check, we need to provide different debugging
+  levels. 
+\item Allow to trace the execution of the components of \SYNEIGHT.
+  \SYNEIGHT will consist of a large number of concurrently running
+  threads and processes. This makes it inherently hard to follow the
+  execution of the system lest to debug the software.
+\end{itemize}
+%
+Therefore, the annotations can be subdivided into 
+\begin{itemize}
+\item switches and parameters\footnote{See definition
+    \vref{def:public-switch} and definition \vref{def:public-parameter}
+    respectively.} which configure the annotations,
+\item annotations for logging and tracing,
+\item annotations to assert and
+  check conditions,
+\item and annotations for testing.
+\end{itemize}
+%
+The annotations for logging, tracing, asserting and checking are
+collectively called \emph{production annotations} since these macros are used
+within production code. The annotations for testing are only used
+within test support and unittest code\footnote{Chapter
+  \vref{cha:components} explains the different files which make up a
+  component. In particular, each component comes with a unittest file
+  (see subsection \vref{sec:unittest}). Moreover, special components are
+  used to support unittest code (see section \vref{sec:test-supp-comp}).}.
+
+
+
+\section{Verbosity Level}
+\label{sec:verbosity-level}
+
+A central concept of the annotation interface is the verbosity level.
+In the code we represent the verbosity level by the enumeration 
+\VerbosityLevelType. Each annotation has an associated verbosity
+level. 
+%
+The possible values of the \VerbosityLevelType are shown in the
+following table. This list is ordered, e.g., $\AudLevel > \DebLevel$.
+We will use this ordering subsequently. The \BuildLevel is a
+subtype of \VerbosityLevelType, i.e., it only is either \AudLevel,
+\DebLevel, or \ProLevel. 
+%
+\begin{center}\begin{footnotesize}\begin{tabular}{||p{2cm}|p{8cm}|p{2cm}||}\hhline{|t:===:t|}
+\multicolumn{3}{||c||}{\textbf{Verbosity Levels}}\\ \hhline{||---||}
+\textbf{Name}         & \textbf{Description} & \textbf{Build Level} 
+\\ \hhline{|:===:|}
+\AudLevel & Audit annotations are used to audit a component, i.e.,
+  these annotations are used by a component to check its internal
+  functionality. E.g., a component might check its invariances with
+  audit annotations. & $\geq \AudLevel$
+\\ \hhline{||---||}
+\DebLevel & Debug annotations are used by a component to guard
+  against misuse. For example components employ debug annotations to
+  check all their preconditions. & $\geq \DebLevel$
+\\ \hhline{||---||}
+\ProLevel & Production annotations are used to check expected errors, such as input kludge,
+  and for logging common events. &  --
+\\ \hhline{||---||}
+\AleLevel & Alert annotations are used to designate critical
+  situations. & --
+\\ \hhline{||---||}
+\EmeLevel & Emergency annotations are used to designate emergency
+  situations. & --
+\\ \hhline{||---||}
+\TesLevel & Test annotations are only used by test
+  drivers. Typical test annotations check for input/output conditions,
+  or whether exceptions are thrown. & --
+\\ \hhline{||---||}
+\SysLevel & System annotations never occur in client code
+  but are used by the annotation framework to log some events. For
+  example, when the annotation framework is activated a log message
+  will be sent. & --
+\\ \hhline{|b:===:b|}
+\end{tabular}\end{footnotesize}\end{center}
+%
+The annotations at \AudLevel (\DebLevel) \textbf{do noting} if the
+\BuildLevel is smaller than \AudLevel (\DebLevel). All other
+annotations are active unconditionally (well, it is possible to switch
+off all annotations with \SwitchProductionAnnotations, however,
+\SYNEIGHT will not work, if this option is used). 
+%
+There remains one more complex issue in the context of the verbosity
+level of an annotation -- testing. We will elaborate this issue in
+subsection \vref{sec:verbosity-level-}.
+
+
+
+
+\section{Configuration}
+\label{sec:configuration}
+
+
+\subsection{Public Configuration}
+\label{sec:public-configuration}
+
+The public configuration interface of the annotations is accessible to
+a client of \SYNEIGHT. Note that these switches  must be set
+consistently across all compilation units which are linked
+together. 
+
+\begin{itemize}
+\item The most important public switch of the annotations of \SYNEIGHT is
+  \SwitchBuildLevel. This switch can take the values
+  \begin{description}
+  \item[-1] switch off all annotations except test annotations. Please
+    note that \SYNEIGHT is not functional without production level
+    checks. That is to say, switching off the production annotations
+    will only be useful in the context of \SYNEIGHT. The reason for
+    having this feature is reusability in the context of other
+    projects.
+  \item[0] for \ProLevel (production)
+  \item[1] for \DebLevel (debugging)
+  \item[2 (default)] for \AudLevel (audit)
+  \end{description}
+  %
+  Since switches cannot be used in C++-code directly, we will use an
+  additional macro to make the current debugging level accessible
+  within the C++-code, namely \BuildLevel. The latter will have the
+  value \SysLevel (for -1), \ProLevel, \DebLevel, or \AudLevel in
+  terms of the enumeration \VerbosityLevelType.
+\item \SwitchLogProChecks is used to control whether failing
+  production checks are logged or not. The rational for not logging is
+  that production checks might be quite uninteresting in a production
+  system. For example, every mistyped user-input would lead to a
+  failing production check. Whether or not to log this stuff should be
+  an option.
+  \begin{description}
+  \item[0 (default for \SwitchBuildLevel == 0):] failing production checks are not logged.
+  \item[1 (default for \SwitchBuildLevel $>$ 0):] failing production checks are logged.
+  \end{description}
+\item Besides the annotations in the production code, there will be
+  annotations for testing purposes. \SwitchTestAnnotations allows to
+  switch them off. More precisely, the following setting exist:
+  \begin{description}
+  \item[-1 (default):] any usage of an test annotation will cause a compile time
+    error. This setting is used, since it must be ensured that all
+    production code comes without test annotations.
+  \item[0:] test annotations are effectless. 
+  \item[1:] test annotations are switched on. 
+  \end{description}
+\item \SwitchInline is used to control whether strong inlining should
+  be done or not. To reduce compile time, not all methods are declared
+  inline but use \Inline instead. Moreover, some methods which
+  would be very small might be large in \AudLevel because of massive
+  logging. Therefore, in \ProLevel they should be inlined and in
+  \AudLevel and \DebLevel they should not be inlined. This is the
+  default behavior -- which can be overwritten by the user.
+  \begin{description}
+  \item[0 (default for \SwitchBuildLevel $>$ 0):] \Inline evaluates to nothing.
+  \item[1 (default for \SwitchBuildLevel == 0):] \Inline evaluates to {\tt inline}.
+  \end{description}
+\end{itemize}
+
+\begin{center}\begin{footnotesize}\begin{tabular}{||p{7cm}|p{8cm}||}\hhline{|t:==:t|}
+\multicolumn{2}{||c||}{\textbf{Public Annotation Configuration}}\\ \hhline{||--||}
+\textbf{Name}         & \textbf{Description}
+\\ \hhline{|:==:|}
+\SwitchBuildLevel & to switch the build level between \ProLevel, \DebLevel, \AudLevel
+\\ \hhline{||--||}
+\SwitchTestAnnotations & to switch on/off all test annotations
+\\ \hhline{||--||}
+\SwitchLogProChecks & to switch on/off logging for failing production
+checks (default setting depends on \SwitchBuildLevel)
+\\ \hhline{||--||}
+\SwitchInline & to switch on/off inlining of conditionally inlined
+methods  (default setting depends on \SwitchBuildLevel)
+\\ \hhline{|b:==:b|}
+\end{tabular}\end{footnotesize}\end{center}
+
+
+
+
+\subsection{Mandatory Internal Configuration}
+\label{sec:mandatory-intern-configuration}
+
+The internal configuration macros solely exist for modifiability
+reasons to avoid hard-coded dependencies and to enhance reusability of
+the annotations-framework. These switches are set internally in the
+global configuration files.\\
+%
+The following settings are mandatory. 
+
+\begin{itemize}
+\item The internal parameter \InternalParamBaseExceptionType is used to set the
+  root class of all \SYNEIGHT exceptions within the annotations
+  framework. This root class will be fixed -- however for the sake of
+  modifiability, this class is parameterized.
+\item \InternalParamTestExceptionType designates the Test-Exception.
+  This exception may or may not be derived from
+  \InternalParamBaseExceptionType. It is thrown if a test-case has a
+  non-positive verdict.
+\item \InternalParamExceptionStrWhat is used to build a string which
+  describes the contents of an exception for logging purposes. It
+  takes an exception as argument of type
+  \InternalParamBaseExceptionType and returns a ::std::string.
+\item \InternalParamTestExceptionStrWhat is used to build a string
+  which describes the contents of a test exception for logging
+  purposes. It takes an exception as argument of type
+  \InternalParamTestExceptionType and returns a ::std::string.
+\item \InternalSwitchHandleTestExceptionExplicitly must be set to 0 if
+  \InternalParamTestExceptionType is derived from
+  \InternalParamBaseExceptionType. Otherwise it has be evaluate to 1.
+\item \InternalParamExceptionA takes an exception type name and
+  constructs an exception of this type in place. This macro exists with
+  numeric suffixes from 0 to 4. The version with a 1 as suffix
+  \InternalParamExceptionB takes two arguments, the first one is again
+  an exception name, the second one is an argument for the exception.
+  In the of suffix \InternalParamExceptionE, the macro takes five
+  arguments, the first one is the exception name, the other four are
+  arguments of the exception.\\
+  %
+  This macro is used to construct an exception in case of an
+  error. Such an exception might constructed more than once for the
+  same error, once to be used to generate a log-message, and a second
+  time to be thrown. 
+%% \item \InternalParamLogActionA takes four arguments:
+%%   \begin{description}
+%%   \item[isAssert:] 1 if the log is triggered by an assert -- otherwise
+%%     (in case of a check) 0.
+%%   \item[ErrorLevel:] of \VerbosityLevelType. 
+%%   \item[Name:] the type name of an exception.
+%%   \item[Cond:] the condition which failed.
+%%   \end{description}
+%%   \InternalParamLogActionB has one more argument, namely the
+%%   argument to the exception that is triggered by the failed assertion.
+%%   This macro exists in variants up to \InternalParamLogActionE
+%%   which takes four exception arguments.\\
+%%   %
+%%   This macro is used to encapsulate the way a log message which is
+%%   describing an error situation is constructed. The programmatic
+%%   response to the error condition is encapsulated in
+%%   \InternalParamThrowActionA-4.
+%% \item \InternalParamThrowActionA takes four arguments:
+%%   \begin{description}
+%%   \item[isAssert:] 1 if the log is triggered by an assert -- otherwise
+%%     (in case of a check) 0.
+%%   \item[ErrorLevel:] of \VerbosityLevelType. 
+%%   \item[Name:] the type name of an exception.
+%%   \item[Cond:] the condition which failed.
+%%   \end{description}
+%%   \InternalParamThrowActionB has one more argument, namely the
+%%   argument to the exception that is triggered by the failed assertion.
+%%   This macro exists in variants up to \InternalParamThrowActionE
+%%   which takes four exception arguments.\\
+%%   %
+%%   This macro is used to encapsulate the action to be taken in case of
+%%   a failed check or assert.
+%%   %
+%%   Logging is encapsulated in its own parameterization macro.
+\end{itemize}
+
+
+\begin{center}\begin{footnotesize}\begin{tabular}{||p{7cm}|p{9cm}||}\hhline{|t:==:t|}
+\multicolumn{2}{||c||}{\textbf{Mandatory Internal Annotation Configuration}}\\ \hhline{||--||}
+\textbf{Name}         & \textbf{Description}
+\\ \hhline{|:==:|}
+\InternalParamBaseExceptionType &
+the root class of the exceptions within \SYNEIGHT 
+\\ \hhline{||--||}
+\InternalParamTestExceptionType &
+the exception to be used in case of a test verdict 
+\\ \hhline{||--||}
+\InternalParamExceptionStrWhat(A)  &
+A of type \InternalParamBaseExceptionType, returns a string describing A
+\\ \hhline{||--||}
+\InternalParamTestExceptionStrWhat &
+A of type \InternalParamTestExceptionType, returns a string describing A
+\\ \hhline{||--||}
+{\tt SYNEIGHT\_\_INTERNAL\_\_SWITCH\_\_ HANDLE\_TEST\_EXCEPTION\_EXPLICITLY}
+ &
+if \InternalParamTestExceptionType is not a subtype of
+\InternalParamBaseExceptionType it must be set to 1 -- otherwise 0
+\\ \hhline{||--||}
+\InternalParamExceptionA(NAME)  &
+constructs an exception of type NAME
+\\ \hhline{||--||}
+\InternalParamExceptionB(NAME,A0)  &
+constructs an exception of type NAME with argument A0
+\\ \hhline{||--||}
+\InternalParamExceptionE(NAME,A0, A1, A2, A3)  &
+constructs an exception of type NAME with arguments A0 to A3.
+\\ \hhline{|b:==:b|}
+\end{tabular}\end{footnotesize}\end{center}
+
+
+
+\subsection{Optional Internal Configuration}
+\label{sec:opti-intern-conf}
+
+
+In this subsection we describe optional settings. The defaults are
+based on the \InternalParamExceptionA-4 macros. The
+\InternalParamLogActionA-4 log the entry, and the
+\InternalParamThrowActionA-4 throw the exception.
+
+\begin{itemize}
+\item \InternalParamLogActionA takes four arguments:
+  \begin{description}
+  \item[isAssert:] 1 if the log is triggered by an assert -- otherwise
+    (in case of a check) 0.
+  \item[ErrorLevel:] of \VerbosityLevelType. 
+  \item[Name:] the type name of an exception.
+  \item[Cond:] the condition which failed.
+  \end{description}
+  \InternalParamLogActionB has one more argument, namely the
+  argument to the exception that is triggered by the failed assertion.
+  This macro exists in variants up to \InternalParamLogActionE
+  which takes four exception arguments.\\
+  %
+  This macro is used to encapsulate the way a log message which is
+  describing an error situation is constructed. The programmatic
+  response to the error condition is encapsulated in
+  \InternalParamThrowActionA-4.
+\item \InternalParamThrowActionA takes four arguments:
+  \begin{description}
+  \item[isAssert:] 1 if the log is triggered by an assert -- otherwise
+    (in case of a check) 0.
+  \item[ErrorLevel:] of \VerbosityLevelType. 
+  \item[Name:] the type name of an exception.
+  \item[Cond:] the condition which failed.
+  \end{description}
+  \InternalParamThrowActionB has one more argument, namely the
+  argument to the exception that is triggered by the failed assertion.
+  This macro exists in variants up to \InternalParamThrowActionE
+  which takes four exception arguments.\\
+  %
+  This macro is used to encapsulate the action to be taken in case of
+  a failed check or assert.
+  %
+  Logging is encapsulated in its own parameterization macro.
+\item \InternalParamBaseFile is a string literal which has to evaluate
+  to the file name of the compilation unit, i.e., to the cpp-file
+  which is currently compiled.
+  %
+  In contrast to {\tt \_\_FILE\_\_}, such a macro is not provided by
+  the C++ standard -- however, most compiler support it. 
+  
+  If the compiler at hand (more precisely, the preprocessor) does not support
+  this feature, or if \SYNEIGHT is not configured for this compiler,
+  then the macro evaluates to the empty string.
+\item \InternalParamPrettyFunction is a string literal which describes
+  the current procedure or method as a string. Again, such a macro is
+  not provided by the standard, but is provided by some compilers.
+  
+  If the compiler in concern does support this feature, or if \SYNEIGHT
+  is not aware of the compiler in question, then the macro evaluates
+  to the empty string.
+\end{itemize}
+
+
+
+%
+\begin{center}\begin{footnotesize}\begin{tabular}{||p{7cm}|p{9cm}||}\hhline{|t:==:t|}
+\multicolumn{2}{||c||}{\textbf{Optional Internal Annotation Configuration}}\\ \hhline{||--||}
+\textbf{Name}         & \textbf{Description}
+\\ \hhline{|:==:|}
+\InternalParamLogActionA (ISASSERT,ERRORLEVEL, NAME, COND) &
+the code to produce a log message if COND failed under error-level ERRORLEVEL
+and NAME is the exception type of the error-condition. ISASSERT is 1
+if COND has been asserted. ISASSERT is 0 is COND has been checked.
+\\ \hhline{||--||}
+\InternalParamLogActionB (ISASSERT,ERRORLEVEL, NAME, COND, A0) &
+like the last macro, but  A0 is the argument to the exception.
+\\ \hhline{||--||}
+\InternalParamLogActionE (ISASSERT,ERRORLEVEL, NAME, COND, A0, A1, A2, A3) &
+like the last macro, but  A0 is the argument to the exception.
+\\ \hhline{||--||}
+
+\InternalParamThrowActionA (ISASSERT, ERRORLEVEL, NAME, COND) &
+the code to react programmatically  if COND failed under error-level ERRORLEVEL
+and NAME is the exception type of the error-condition. ISASSERT is 1
+if  COND has been asserted. ISASSERT is 0 is COND has been checked.
+\\ \hhline{||--||}
+\InternalParamThrowActionB (ERRORLEVEL, NAME, COND, A0) &
+like the last macro, but  A0 is the argument to the exception.
+\\ \hhline{||--||}
+\InternalParamThrowActionE (ERRORLEVEL, NAME, COND, A0, A1, A2, A3) &
+like the last macro, but  A0 to A3 are the arguments to the exception.
+\\ \hhline{||--||}
+\InternalParamBaseFile & the base file of the compilation unit as
+string literal
+\\ \hhline{||--||}
+\InternalParamPrettyFunction & the current procedure or method as
+string literal\\ \hhline{|b:==:b|}
+\end{tabular}\end{footnotesize}\end{center}
+
+
+\section{Production Interface}
+\label{sec:production-interface}
+
+The production interface contains those macros that are allowed to
+appear in production code, i.e., in its interface and implementation
+files. For details, see section \vref{sec:files-component}. 
+%
+We use {\tt XXX} in the following as a variable for the verbosity
+level. It is either {\tt AUD} (audit), {\tt DEB} (debug), {\tt PRO}
+(production), {\tt ALE} (alert), {\tt EME} (emergency), or {\tt TES}
+(test).
+%
+So for example {\tt SYNEIGHT\_\_DEB\_\_TRACE} is the macro to be used
+for debug trace messages.
+%
+In some cases, {\tt XXX} is only allowed to take a subset of the above
+list -- naturally, we will emphasize these situations.
+%
+%
+
+
+\subsection{Logging \& Tracing}
+\label{sec:logging--tracing}
+
+
+Independently of the 
+
+\begin{center}\begin{footnotesize}\begin{tabular}{||p{7cm}|p{9cm}||}\hhline{|t:==:t|}
+\textbf{Name}         & \textbf{Description}
+\\ \hhline{|:==:|}
+\XXXTrace(STR) &
+log the human readable string STR
+\\ \hhline{||--||}
+\XXXBinaryTrace(STR) &
+log the binary string STR
+\\ \hhline{||--||}
+
+\XXXBlockEnter(STR) &
+as pair with \XXXBlockExit. logs the string STR on entering the block
+and on leaving the block. Can be nested.
+\\ \hhline{||--||}
+\XXXBlockExit &
+see above.
+\\ \hhline{||--||}
+\XXXBlockGuard(STR) &
+logs the string STR on passing over the guard and on leaving the
+surrounding block. Can be nested -- but can only appear once within
+the same block. 
+\\ \hhline{||--||}
+
+\XXXProcedureEnter(STR) &
+as pair with \XXXProcedureExit. logs the string STR on entering the
+annotated procedure and on leaving the procedure. Only valid once within
+a procedure and cannot be used simultaneously with
+\XXXProcedureGuard. If used, it should be first statement in the procedure.
+\\ \hhline{||--||}
+\XXXProcedureExit &
+see above -- if used it should be the last statement in the procedure.
+\\ \hhline{||--||}
+\XXXProcedureGuard(STR) &
+logs the string STR on entering the annotated procedure and on leaving
+the procedure. Cannot be used simultaneously with
+\XXXProcedureEnter/\XXXProcedureExit. If used, it should be the first
+statement in the procedure.
+\\ \hhline{||--||}
+
+\XXXMethodEnter(STR) &
+as pair with \XXXMethodExit. logs the string STR on entering the
+annotated method and on leaving the method. Only valid once within
+a method and cannot be used simultaneously with
+\XXXMethodGuard. If used, it should be first statement in the method.
+\\ \hhline{||--||}
+\XXXMethodExit &
+see above -- if used it should be the last statement in the method.
+\\ \hhline{||--||}
+\XXXMethodGuard(STR) &
+logs the string STR on entering the annotated method and on leaving
+the method. Cannot be used simultaneously with
+\XXXMethodEnter/\XXXMethodExit. If used, it should be the first
+statement in the procedure.
+\\ \hhline{|b:==:b|}
+
+\end{tabular}\end{footnotesize}\end{center}
+
+
+
+%% \item SYNEIGHT_XXX_ASSERT0(NAME,COND)           ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT1(NAME,COND,STR_WHAT) ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT2(NAME,COND,WHAT1,WHAT2) ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT3(NAME,COND,STR_WHAT,W2,W3)  ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT4(NAME,COND,WHAT1,WHAT2,W3,W4)  ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT_LOG0(NAME,COND)           ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT_LOG1(NAME,COND,STR_WHAT) ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT_LOG2(NAME,COND,WHAT1,WHAT2) ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT_LOG3(NAME,COND,STR_WHAT,W2,W3)  ((void)0)
+%% \item SYNEIGHT_XXX_ASSERT_LOG4(NAME,COND,WHAT1,WHAT2,W3,W4)  ((void)0)
+%% \item SYNEIGHT_XXX_CHECK0(NAME,COND)            ((void)0)
+%% \item SYNEIGHT_XXX_CHECK1(NAME,COND,STR_WHAT)  ((void)0)
+%% \item SYNEIGHT_XXX_CHECK2(NAME,COND,WHAT1,WHAT2)  ((void)0)
+%% \item SYNEIGHT_XXX_CHECK3(NAME,COND,STR_WHAT,W2,W3)  ((void)0)
+%% \item SYNEIGHT_XXX_CHECK4(NAME,COND,WHAT1,WHAT2,W3,W4)  ((void)0)
+%% 
+%% \item SYNEIGHT_XXX_CLASS_THROWING_INVARIANCE_ENTER do {
+%% \item SYNEIGHT_XXX_CLASS_THROWING_INVARIANCE_EXIT  } while(false)
+%% 
+%% \item SYNEIGHT_XXX_CLASS_INVARIANCE_GUARD ((void)0)
+%% \item SYNEIGHT_XXX_CLASS_INVARIANCE_ENTER do {
+%% \item SYNEIGHT_XXX_CLASS_INVARIANCE_EXIT  } while(false)
+%% 
+%% \item SYNEIGHT_XXX_CLASS_INVARIANCE_ASSERT  ((void)0)
+%% 
+%% \item SYNEIGHT_XXX_EXCEPTIONLESS_BLOCK_ENTER do {
+%% \item SYNEIGHT_XXX_EXCEPTIONLESS_BLOCK_EXIT  } while(false)
+
+
+\subsection{Asserts \& Checks}
+\label{sec:asserts--checks}
+
+
+\subsection{Miscellaneous}
+\label{sec:miscellaneous}
+
+\begin{itemize}
+\item \BuildLevel (set to either \ProLevel, \DebLevel, or \AudLevel):
+  Used to identify the currently employed build-level. This feature is
+  mainly used internally by other macros.
+\item \Inline (set to either {\tt inline} or the empty string): Used
+  to as modifier for methods and procedures which should be inlined in
+  a release version (usually with \BuildLevel == \ProLevel).
+\end{itemize}
+
+
+
+
+% inline
+
+
+\section{Testing Interface}
+\label{sec:testing-interface}
+
+
+
+\subsection{Verbosity Level \& Testing}
+\label{sec:verbosity-level-}
+
+
+
+\begin{verbatim}
+
+#ifndef SYNEIGHT_DEBUG__LEVEL__
+#  define SYNEIGHT_DEBUG__LEVEL__ 2
+#endif
+
+#ifndef SYNEIGHT_INLINE
+#  if SYNEIGHT_DEBUG__LEVEL__ == 0
+#    define SYNEIGHT_INLINE inline 
+#  else
+#    define SYNEIGHT_INLINE 
+#  endif
+#endif
+
+
+#ifndef SYNEIGHT_BASE_EXCEPTION_TYPE
+#  define SYNEIGHT_BASE_EXCEPTION_TYPE ::syneight::Exception
+#  include <syneight/exceptions/exception.hpp>
+#  include <syneight/exceptions/source_location.hpp>
+#  define SYNEIGHT_BASE_EXCEPTION_STR_WHAT(EX) (::std::string("excep.name=\"") + (EX).name() \
+                                                             + "\" excep.what=\"" + (EX).what() \
+                                                             + "\" excep.source_location=\"" + (EX).source_location().to_string() \
+                                               + "\"")
+#endif
+
+#define TEST_BASE_EXCEPTION_TYPE SYNEIGHT_BASE_EXCEPTION_TYPE
+#define TEST_BASE_EXCEPTION_STR_WHAT(EX) SYNEIGHT_BASE_EXCEPTION_STR_WHAT(EX)
+
+// ATTENTION: The define is set to 1 in unittest.t.hpp and unittest.ts.hpp.
+// The reason is that the unittest is allowed to depend on diagnostics/unittest.
+#ifndef SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY
+#  define SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY 0
+#endif
+
+
+#define SYNEIGHT_EXCEPTION0(NAME) NAME(Source_Location(DIAGNOSTICS_BASE_FILE,__FILE__,__LINE__))
+#define SYNEIGHT_EXCEPTION1(NAME,W1) NAME(Source_Location(DIAGNOSTICS_BASE_FILE,__FILE__,__LINE__),W1)
+#define SYNEIGHT_EXCEPTION2(NAME,W1,W2) NAME(Source_Location(DIAGNOSTICS_BASE_FILE,__FILE__,__LINE__),W1,W2)
+#define SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3) NAME(Source_Location(DIAGNOSTICS_BASE_FILE,__FILE__,__LINE__),W1,W2,W3)
+#define SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4) NAME(Source_Location(DIAGNOSTICS_BASE_FILE,__FILE__,__LINE__),W1,W2,W3,W4)
+
+
+#ifndef SYNEIGHT_FAILED_CHECK_ACTION
+#  define SYNEIGHT_FAILED_CHECK_ACTION(LEVEL,NAME,COND) \
+     throw SYNEIGHT_EXCEPTION1(NAME,#COND)
+#endif
+
+#ifndef SYNEIGHT_FAILED_CHECK_ACTION0
+#  define SYNEIGHT_FAILED_CHECK_ACTION0(LEVEL,NAME,COND) \
+     throw SYNEIGHT_EXCEPTION0(NAME)
+#endif
+
+#ifndef SYNEIGHT_FAILED_CHECK_ACTION1
+#  define SYNEIGHT_FAILED_CHECK_ACTION1(LEVEL,NAME,COND,W1) \
+     throw SYNEIGHT_EXCEPTION1(NAME,W1)
+#endif
+
+#ifndef SYNEIGHT_FAILED_CHECK_ACTION2
+#  define SYNEIGHT_FAILED_CHECK_ACTION2(LEVEL,NAME,COND,W1,W2) \
+     throw SYNEIGHT_EXCEPTION2(NAME,W1,W2)
+#endif
+
+#ifndef SYNEIGHT_FAILED_CHECK_ACTION3
+#  define SYNEIGHT_FAILED_CHECK_ACTION3(LEVEL,NAME,COND,W1,W2,W3) \
+     throw SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3)
+#endif
+
+#ifndef SYNEIGHT_FAILED_CHECK_ACTION4
+#  define SYNEIGHT_FAILED_CHECK_ACTION4(LEVEL,NAME,COND,W1,W2,W3,W4) \
+     throw SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4)
+#endif
+
+
+#ifndef SYNEIGHT_FAILED_ASSERT_ACTION
+#  define SYNEIGHT_FAILED_ASSERT_ACTION(LEVEL,NAME,COND) \
+     throw SYNEIGHT_EXCEPTION1(NAME,#COND)
+#endif
+
+#ifndef SYNEIGHT_FAILED_ASSERT_ACTION0
+#  define SYNEIGHT_FAILED_ASSERT_ACTION0(LEVEL,NAME,COND) \
+     throw SYNEIGHT_EXCEPTION0(NAME)
+#endif
+
+#ifndef SYNEIGHT_FAILED_ASSERT_ACTION1
+#  define SYNEIGHT_FAILED_ASSERT_ACTION1(LEVEL,NAME,COND,W1) \
+     throw SYNEIGHT_EXCEPTION1(NAME,W1)
+#endif
+
+#ifndef SYNEIGHT_FAILED_ASSERT_ACTION2
+#  define SYNEIGHT_FAILED_ASSERT_ACTION2(LEVEL,NAME,COND,W1,W2) \
+     throw SYNEIGHT_EXCEPTION2(NAME,W1,W2)
+#endif
+
+#ifndef SYNEIGHT_FAILED_ASSERT_ACTION3
+#  define SYNEIGHT_FAILED_ASSERT_ACTION3(LEVEL,NAME,COND,W1,W2,W3) \
+     throw SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3)
+#endif
+
+#ifndef SYNEIGHT_FAILED_ASSERT_ACTION4
+#  define SYNEIGHT_FAILED_ASSERT_ACTION4(LEVEL,NAME,COND,W1,W2,W3,W4) \
+     throw SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4)
+#endif
+
+# TODO: Document this.
+#ifndef SYNEIGHT_NR_WHAT_DEFAULT
+#  define SYNEIGHT_NR_WHAT_DEFAULT 0
+#endif 
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Derived config
+
+
+#if SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY == 1
+#  include <diagnostics/unittest/test_exception.hpp>
+#endif
+
+#ifndef SYNEIGHT_BASE_EXCEPTION_STR_WHAT
+#  warning SYNEIGHT_BASE_EXCEPTION_STR_WHAT not defined
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
+// AUDIT
+
+#if SYNEIGHT_DEBUG__LEVEL__ > 1
+
+#  define SYNEIGHT_AUDIT_TRACE(STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_AUDIT,::diagnostics::TYPE_TRACE,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+#  define SYNEIGHT_AUDIT_BINARY_TRACE(STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_AUDIT,::diagnostics::TYPE_TRACE_BINARY,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+
+#  define SYNEIGHT_AUDIT_BLOCK_ENTER(STR_WHAT)  \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_AUDIT, \
+                                 ::diagnostics::TYPE_BLOCK_ENTER, \
+                                 ::diagnostics::TYPE_BLOCK_EXIT,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+#  define SYNEIGHT_AUDIT_BLOCK_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#  define SYNEIGHT_AUDIT_BLOCK_GUARD(STR_WHAT)  \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_AUDIT, \
+                                 ::diagnostics::TYPE_BLOCK_ENTER, \
+                                 ::diagnostics::TYPE_BLOCK_EXIT,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+
+#  define SYNEIGHT_AUDIT_PROCEDURE_ENTER(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_AUDIT, \
+                                 ::diagnostics::TYPE_PROCEDURE_ENTER, \
+                                 ::diagnostics::TYPE_PROCEDURE_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("procedure=\"") + DIAGNOSTICS_FUNC_NAME + "\" " + (STR_WHAT))
+#  define SYNEIGHT_AUDIT_PROCEDURE_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#  define SYNEIGHT_AUDIT_PROCEDURE_GUARD(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_AUDIT, \
+                                 ::diagnostics::TYPE_PROCEDURE_ENTER, \
+                                 ::diagnostics::TYPE_PROCEDURE_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("procedure=\"") + DIAGNOSTICS_FUNC_NAME + "\" " + (STR_WHAT))
+
+#  define SYNEIGHT_AUDIT_METHOD_ENTER(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_AUDIT, \
+                                 ::diagnostics::TYPE_METHOD_ENTER, \
+                                 ::diagnostics::TYPE_METHOD_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("method=\"") + DIAGNOSTICS_FUNC_NAME + "\" " + (STR_WHAT))
+#  define SYNEIGHT_AUDIT_METHOD_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#  define SYNEIGHT_AUDIT_METHOD_GUARD(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_AUDIT, \
+                                 ::diagnostics::TYPE_METHOD_ENTER, \
+                                 ::diagnostics::TYPE_METHOD_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("method=\"") + DIAGNOSTICS_FUNC_NAME + "\" " + (STR_WHAT))
+
+#  define SYNEIGHT_AUDIT_ASSERT(NAME,COND) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                            "condition=\"" #COND "\" excep.name=\"" #NAME "\"",\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION(::diagnostics::LEVEL_AUDIT,NAME,COND))
+#  define SYNEIGHT_AUDIT_ASSERT1(NAME,COND,WHAT1) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION1(NAME,WHAT1).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION1(::diagnostics::LEVEL_AUDIT,NAME,COND,WHAT1))
+#  define SYNEIGHT_AUDIT_ASSERT2(NAME,COND,WHAT1,WHAT2) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION2(NAME,WHAT1,WHAT2).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION2(::diagnostics::LEVEL_AUDIT,NAME,COND,WHAT1,WHAT2))
+#  define SYNEIGHT_AUDIT_ASSERT3(NAME,COND,W1,W2,W3) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION3(::diagnostics::LEVEL_AUDIT,NAME,COND,W1,W2,W3))
+#  define SYNEIGHT_AUDIT_ASSERT4(NAME,COND,W1,W2,W3,W4) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION4(::diagnostics::LEVEL_AUDIT,NAME,COND,W1,W2,W3,W4))
+#  define SYNEIGHT_AUDIT_ASSERT_LOG(NAME,COND) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                            "condition=\"" #COND "\" excep.name=\"" #NAME "\"",\
+                            (COND),((void)0))
+#  define SYNEIGHT_AUDIT_ASSERT_LOG1(NAME,COND,WHAT1) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION1(NAME,WHAT1).what(),\
+                            (COND),((void)0))
+#  define SYNEIGHT_AUDIT_ASSERT_LOG2(NAME,COND,WHAT1,WHAT2) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION2(NAME,WHAT1,WHAT2).what(),\
+                            (COND),((void)0))
+#  define SYNEIGHT_AUDIT_ASSERT_LOG3(NAME,COND,WHAT1,WHAT2,W3) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION3(NAME,WHAT1,WHAT2,W3).what(),\
+                            (COND),((void)0))
+#  define SYNEIGHT_AUDIT_ASSERT_LOG4(NAME,COND,WHAT1,WHAT2,W3,W4) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION4(NAME,WHAT1,WHAT2,W3,W4).what(),\
+                            (COND),((void)0))
+#  define SYNEIGHT_AUDIT_CHECK(NAME,COND) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_AUDIT,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           "condition=\"" #COND "\" excep.name=\"" #NAME "\"",\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION(::diagnostics::LEVEL_AUDIT,NAME,COND))
+#  define SYNEIGHT_AUDIT_CHECK1(NAME,COND,WHAT1) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_AUDIT,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION1(NAME,WHAT1).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION1(::diagnostics::LEVEL_AUDIT,NAME,COND,WHAT1))
+#  define SYNEIGHT_AUDIT_CHECK2(NAME,COND,WHAT1,WHAT2) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_AUDIT,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION2(NAME,WHAT1,WHAT2).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION2(::diagnostics::LEVEL_AUDIT,NAME,COND,WHAT1,WHAT2))
+#  define SYNEIGHT_AUDIT_CHECK3(NAME,COND,W1,W2,W3) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_CHECK_ACTION3(::diagnostics::LEVEL_AUDIT,NAME,COND,W1,W2,W3))
+#  define SYNEIGHT_AUDIT_CHECK4(NAME,COND,W1,W2,W3,W4) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_AUDIT,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_CHECK_ACTION4(::diagnostics::LEVEL_AUDIT,NAME,COND,W1,W2,W3,W4))
+
+#  define SYNEIGHT_AUDIT_CLASS_THROWING_INVARIANCE_ENTER DIAGNOSTICS_BASE_CLASS_THROWING_INVARIANCE_ENTER
+#  define SYNEIGHT_AUDIT_CLASS_THROWING_INVARIANCE_EXIT  \
+    DIAGNOSTICS_BASE_CLASS_THROWING_INVARIANCE_EXIT(::diagnostics::LEVEL_AUDIT,\
+                                           SYNEIGHT_NR_WHAT_DEFAULT, \
+                                           SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY,\
+                                           SYNEIGHT_BASE_EXCEPTION_TYPE,\
+                                           SYNEIGHT_BASE_EXCEPTION_STR_WHAT)
+
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_GUARD DIAGNOSTICS_BASE_CLASS_INVARIANCE_GUARD
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_ENTER DIAGNOSTICS_BASE_CLASS_INVARIANCE_ENTER
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_EXIT  DIAGNOSTICS_BASE_CLASS_INVARIANCE_EXIT
+
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_ASSERT  DIAGNOSTICS_BASE_CLASS_INVARIANCE_ASSERT
+
+
+#  define SYNEIGHT_AUDIT_EXCEPTIONLESS_BLOCK_ENTER  DIAGNOSTICS_BASE_EXCEPTIONLESS_BLOCK_ENTER
+#  define SYNEIGHT_AUDIT_EXCEPTIONLESS_BLOCK_EXIT  \
+    DIAGNOSTICS_BASE_EXCEPTIONLESS_BLOCK_EXIT(::diagnostics::LEVEL_AUDIT,\
+                                              SYNEIGHT_NR_WHAT_DEFAULT, \
+                                              true,\
+                                              SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY,\
+                                              SYNEIGHT_BASE_EXCEPTION_TYPE,\
+                                              SYNEIGHT_BASE_EXCEPTION_STR_WHAT)
+
+#else
+
+#  define SYNEIGHT_AUDIT_TRACE(STR_WHAT)        ((void)0)
+#  define SYNEIGHT_AUDIT_BINARY_TRACE(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_AUDIT_BLOCK_ENTER(STR_WHAT) do {
+#  define SYNEIGHT_AUDIT_BLOCK_EXIT            } while(false)
+#  define SYNEIGHT_AUDIT_BLOCK_GUARD(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_AUDIT_PROCEDURE_ENTER(STR_WHAT) do {
+#  define SYNEIGHT_AUDIT_PROCEDURE_EXIT            } while(false)
+#  define SYNEIGHT_AUDIT_PROCEDURE_GUARD(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_AUDIT_METHOD_ENTER(STR_WHAT) do {
+#  define SYNEIGHT_AUDIT_METHOD_EXIT            } while(false)
+#  define SYNEIGHT_AUDIT_METHOD_GUARD(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_AUDIT_ASSERT(NAME,COND)           ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT1(NAME,COND,STR_WHAT) ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT2(NAME,COND,WHAT1,WHAT2) ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT3(NAME,COND,STR_WHAT,W2,W3)  ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT4(NAME,COND,WHAT1,WHAT2,W3,W4)  ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT_LOG(NAME,COND)           ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT_LOG1(NAME,COND,STR_WHAT) ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT_LOG2(NAME,COND,WHAT1,WHAT2) ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT_LOG3(NAME,COND,STR_WHAT,W2,W3)  ((void)0)
+#  define SYNEIGHT_AUDIT_ASSERT_LOG4(NAME,COND,WHAT1,WHAT2,W3,W4)  ((void)0)
+#  define SYNEIGHT_AUDIT_CHECK(NAME,COND)            ((void)0)
+#  define SYNEIGHT_AUDIT_CHECK1(NAME,COND,STR_WHAT)  ((void)0)
+#  define SYNEIGHT_AUDIT_CHECK2(NAME,COND,WHAT1,WHAT2)  ((void)0)
+#  define SYNEIGHT_AUDIT_CHECK3(NAME,COND,STR_WHAT,W2,W3)  ((void)0)
+#  define SYNEIGHT_AUDIT_CHECK4(NAME,COND,WHAT1,WHAT2,W3,W4)  ((void)0)
+
+#  define SYNEIGHT_AUDIT_CLASS_THROWING_INVARIANCE_ENTER do {
+#  define SYNEIGHT_AUDIT_CLASS_THROWING_INVARIANCE_EXIT  } while(false)
+
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_GUARD ((void)0)
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_ENTER do {
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_EXIT  } while(false)
+
+#  define SYNEIGHT_AUDIT_CLASS_INVARIANCE_ASSERT  ((void)0)
+
+#  define SYNEIGHT_AUDIT_EXCEPTIONLESS_BLOCK_ENTER do {
+#  define SYNEIGHT_AUDIT_EXCEPTIONLESS_BLOCK_EXIT  } while(false)
+
+#endif
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+#if SYNEIGHT_DEBUG__LEVEL__ > 0
+
+#  define SYNEIGHT_DEBUG_TRACE(STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_DEBUG,::diagnostics::TYPE_TRACE,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+#  define SYNEIGHT_DEBUG_BINARY_TRACE(STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_DEBUG,::diagnostics::TYPE_TRACE_BINARY,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+
+#  define SYNEIGHT_DEBUG_BLOCK_ENTER(STR_WHAT)  \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_DEBUG, \
+                                 ::diagnostics::TYPE_BLOCK_ENTER, \
+                                 ::diagnostics::TYPE_BLOCK_EXIT,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+#  define SYNEIGHT_DEBUG_BLOCK_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#  define SYNEIGHT_DEBUG_BLOCK_GUARD(STR_WHAT)  \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_DEBUG, \
+                                 ::diagnostics::TYPE_BLOCK_ENTER, \
+                                 ::diagnostics::TYPE_BLOCK_EXIT,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+
+#  define SYNEIGHT_DEBUG_PROCEDURE_ENTER(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_DEBUG, \
+                                 ::diagnostics::TYPE_PROCEDURE_ENTER, \
+                                 ::diagnostics::TYPE_PROCEDURE_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("procedure=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+#  define SYNEIGHT_DEBUG_PROCEDURE_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#  define SYNEIGHT_DEBUG_PROCEDURE_GUARD(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_DEBUG, \
+                                 ::diagnostics::TYPE_PROCEDURE_ENTER, \
+                                 ::diagnostics::TYPE_PROCEDURE_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("procedure=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+
+#  define SYNEIGHT_DEBUG_METHOD_ENTER(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_DEBUG, \
+                                 ::diagnostics::TYPE_METHOD_ENTER, \
+                                 ::diagnostics::TYPE_METHOD_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("method=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+#  define SYNEIGHT_DEBUG_METHOD_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#  define SYNEIGHT_DEBUG_METHOD_GUARD(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_DEBUG, \
+                                 ::diagnostics::TYPE_METHOD_ENTER, \
+                                 ::diagnostics::TYPE_METHOD_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("method=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+
+#  define SYNEIGHT_DEBUG_ASSERT(NAME,COND) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_DEBUG,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                            "condition=\"" #COND "\" excep.name=\"" #NAME "\"",\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION(::diagnostics::LEVEL_DEBUG,NAME,COND))
+#  define SYNEIGHT_DEBUG_ASSERT1(NAME,COND,WHAT1) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_DEBUG,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION1(NAME,WHAT1).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION1(::diagnostics::LEVEL_DEBUG,NAME,COND,WHAT1))
+#  define SYNEIGHT_DEBUG_ASSERT2(NAME,COND,WHAT1,WHAT2) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_DEBUG,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION2(NAME,WHAT1,WHAT2).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION2(::diagnostics::LEVEL_DEBUG,NAME,COND,WHAT1,WHAT2))
+#  define SYNEIGHT_DEBUG_ASSERT3(NAME,COND,W1,W2,W3) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_DEBUG,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION3(::diagnostics::LEVEL_DEBUG,NAME,COND,W1,W2,W3))
+#  define SYNEIGHT_DEBUG_ASSERT4(NAME,COND,W1,W2,W3,W4) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_DEBUG,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION4(::diagnostics::LEVEL_DEBUG,NAME,COND,W1,W2,W3,W4))
+#  define SYNEIGHT_DEBUG_CHECK(NAME,COND) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_DEBUG,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           "condition=\"" #COND "\" excep.name=\"" #NAME "\"",\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION(::diagnostics::LEVEL_DEBUG,NAME,COND))
+#  define SYNEIGHT_DEBUG_CHECK0(NAME,COND) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_DEBUG,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION0(NAME).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION0(::diagnostics::LEVEL_DEBUG,NAME,COND))
+#  define SYNEIGHT_DEBUG_CHECK1(NAME,COND,WHAT1) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_DEBUG,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION1(NAME,WHAT1).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION1(::diagnostics::LEVEL_DEBUG,NAME,COND,WHAT1))
+#  define SYNEIGHT_DEBUG_CHECK2(NAME,COND,WHAT1,WHAT2) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_DEBUG,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION2(NAME,WHAT1,WHAT2).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION2(::diagnostics::LEVEL_DEBUG,NAME,COND,WHAT1,WHAT2))
+#  define SYNEIGHT_DEBUG_CHECK3(NAME,COND,W1,W2,W3) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_DEBUG,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_CHECK_ACTION3(::diagnostics::LEVEL_DEBUG,NAME,COND,W1,W2,W3))
+#  define SYNEIGHT_DEBUG_CHECK4(NAME,COND,W1,W2,W3,W4) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_DEBUG,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_CHECK_ACTION4(::diagnostics::LEVEL_DEBUG,NAME,COND,W1,W2,W3,W4))
+
+
+#  define SYNEIGHT_DEBUG_CLASS_THROWING_INVARIANCE_ENTER DIAGNOSTICS_BASE_CLASS_THROWING_INVARIANCE_ENTER
+#  define SYNEIGHT_DEBUG_CLASS_THROWING_INVARIANCE_EXIT  \
+    DIAGNOSTICS_BASE_CLASS_THROWING_INVARIANCE_EXIT(::diagnostics::LEVEL_DEBUG,\
+                                           SYNEIGHT_NR_WHAT_DEFAULT, \
+                                           SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY,\
+                                           SYNEIGHT_BASE_EXCEPTION_TYPE,\
+                                           SYNEIGHT_BASE_EXCEPTION_STR_WHAT)
+
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_GUARD DIAGNOSTICS_BASE_CLASS_INVARIANCE_GUARD
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_ENTER DIAGNOSTICS_BASE_CLASS_INVARIANCE_ENTER
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_EXIT  DIAGNOSTICS_BASE_CLASS_INVARIANCE_EXIT
+
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_ASSERT  DIAGNOSTICS_BASE_CLASS_INVARIANCE_ASSERT
+
+#  define SYNEIGHT_DEBUG_EXCEPTIONLESS_BLOCK_ENTER  DIAGNOSTICS_BASE_EXCEPTIONLESS_BLOCK_ENTER
+#  define SYNEIGHT_DEBUG_EXCEPTIONLESS_BLOCK_EXIT  \
+    DIAGNOSTICS_BASE_EXCEPTIONLESS_BLOCK_EXIT(::diagnostics::LEVEL_DEBUG,\
+                                              SYNEIGHT_NR_WHAT_DEFAULT, \
+                                              true,\
+                                              SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY,\
+                                              SYNEIGHT_BASE_EXCEPTION_TYPE,\
+                                              SYNEIGHT_BASE_EXCEPTION_STR_WHAT)
+
+#else
+
+#  define SYNEIGHT_DEBUG_TRACE(STR_WHAT)        ((void)0)
+#  define SYNEIGHT_DEBUG_BINARY_TRACE(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_DEBUG_BLOCK_ENTER(STR_WHAT) do {
+#  define SYNEIGHT_DEBUG_BLOCK_EXIT            } while(false)
+#  define SYNEIGHT_DEBUG_BLOCK_GUARD(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_DEBUG_PROCEDURE_ENTER(STR_WHAT) do {
+#  define SYNEIGHT_DEBUG_PROCEDURE_EXIT            } while(false)
+#  define SYNEIGHT_DEBUG_PROCEDURE_GUARD(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_DEBUG_METHOD_ENTER(STR_WHAT) do {
+#  define SYNEIGHT_DEBUG_METHOD_EXIT            } while(false)
+#  define SYNEIGHT_DEBUG_METHOD_GUARD(STR_WHAT) ((void)0)
+
+#  define SYNEIGHT_DEBUG_ASSERT(NAME,COND)           ((void)0)
+#  define SYNEIGHT_DEBUG_ASSERT1(NAME,COND,STR_WHAT) ((void)0)
+#  define SYNEIGHT_DEBUG_ASSERT2(NAME,COND,W1,W2) ((void)0)
+#  define SYNEIGHT_DEBUG_ASSERT3(NAME,COND,W1,W2,W3) ((void)0)
+#  define SYNEIGHT_DEBUG_ASSERT4(NAME,COND,W1,W2,W3,W4) ((void))0
+#  define SYNEIGHT_DEBUG_CHECK(NAME,COND)            ((void)0)
+#  define SYNEIGHT_DEBUG_CHECK1(NAME,COND,STR_WHAT)  ((void)0)
+#  define SYNEIGHT_DEBUG_CHECK2(NAME,COND,WHAT1,WHAT2)  ((void)0)
+#  define SYNEIGHT_DEBUG_CHECK3(NAME,COND,W1,W2,W3) ((void)0)
+#  define SYNEIGHT_DEBUG_CHECK4(NAME,COND,W1,W2,W3,W4) ((void))0
+
+#  define SYNEIGHT_DEBUG_CLASS_THROWING_INVARIANCE_ENTER do {
+#  define SYNEIGHT_DEBUG_CLASS_THROWING_INVARIANCE_EXIT  } while(false)
+
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_GUARD ((void)0)
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_ENTER do {
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_EXIT  } while(false)
+
+#  define SYNEIGHT_DEBUG_CLASS_INVARIANCE_ASSERT  ((void)0)
+
+#  define SYNEIGHT_DEBUG_EXCEPTIONLESS_BLOCK_ENTER do {
+#  define SYNEIGHT_DEBUG_EXCEPTIONLESS_BLOCK_EXIT  } while(false)
+
+#endif
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+#define SYNEIGHT_PROD_TRACE(STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_PROD,::diagnostics::TYPE_TRACE,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+#define SYNEIGHT_PROD_BINARY_TRACE(STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_PROD,::diagnostics::TYPE_TRACE_BINARY,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+
+#define SYNEIGHT_PROD_TRACE1(NR_WHAT,STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_PROD,::diagnostics::TYPE_TRACE,(NR_WHAT),(STR_WHAT))
+#define SYNEIGHT_PROD_BINARY_TRACE1(NR_WHAT,STR_WHAT) \
+    DIAGNOSTICS_BASE_LOG(::diagnostics::LEVEL_PROD,::diagnostics::TYPE_TRACE_BINARY,(NR_WHAT),(STR_WHAT))
+
+
+#define SYNEIGHT_PROD_BLOCK_ENTER(STR_WHAT)  \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_PROD, \
+                                 ::diagnostics::TYPE_BLOCK_ENTER, \
+                                 ::diagnostics::TYPE_BLOCK_EXIT,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+#define SYNEIGHT_PROD_BLOCK_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#define SYNEIGHT_PROD_BLOCK_GUARD(STR_WHAT)  \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_PROD, \
+                                 ::diagnostics::TYPE_BLOCK_ENTER, \
+                                 ::diagnostics::TYPE_BLOCK_EXIT,SYNEIGHT_NR_WHAT_DEFAULT,(STR_WHAT))
+
+#define SYNEIGHT_PROD_PROCEDURE_ENTER(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_PROD, \
+                                 ::diagnostics::TYPE_PROCEDURE_ENTER, \
+                                 ::diagnostics::TYPE_PROCEDURE_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("procedure=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+#define SYNEIGHT_PROD_PROCEDURE_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#define SYNEIGHT_PROD_PROCEDURE_GUARD(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_PROD, \
+                                 ::diagnostics::TYPE_PROCEDURE_ENTER, \
+                                 ::diagnostics::TYPE_PROCEDURE_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("procedure=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+
+#define SYNEIGHT_PROD_METHOD_ENTER(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_ENTER(::diagnostics::LEVEL_PROD, \
+                                 ::diagnostics::TYPE_METHOD_ENTER, \
+                                 ::diagnostics::TYPE_METHOD_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("method=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+#define SYNEIGHT_PROD_METHOD_EXIT DIAGNOSTICS_BASE_BLOCK_EXIT
+#define SYNEIGHT_PROD_METHOD_GUARD(STR_WHAT) \
+    DIAGNOSTICS_BASE_BLOCK_GUARD(::diagnostics::LEVEL_PROD, \
+                                 ::diagnostics::TYPE_METHOD_ENTER, \
+                                 ::diagnostics::TYPE_METHOD_EXIT,SYNEIGHT_NR_WHAT_DEFAULT, \
+                                 ::std::string("method=\"" DIAGNOSTICS_FUNC_NAME "\" ") + (STR_WHAT))
+
+#define SYNEIGHT_PROD_ASSERT(NAME,COND) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_PROD,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                            "condition=\"" #COND "\" excep.name=\"" #NAME "\"",\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION(::diagnostics::LEVEL_PROD,NAME,COND))
+#define SYNEIGHT_PROD_ASSERT1(NAME,COND,WHAT1) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_PROD,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION1(NAME,WHAT1).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION1(::diagnostics::LEVEL_PROD,NAME,COND,WHAT1))
+#define SYNEIGHT_PROD_ASSERT2(NAME,COND,WHAT1,WHAT2) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_PROD,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION2(NAME,WHAT1,WHAT2).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION2(::diagnostics::LEVEL_PROD,NAME,COND,WHAT1,WHAT2))
+#  define SYNEIGHT_PROD_ASSERT3(NAME,COND,W1,W2,W3) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_PROD,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION3(::diagnostics::LEVEL_PROD,NAME,COND,W1,W2,W3))
+#  define SYNEIGHT_PROD_ASSERT4(NAME,COND,W1,W2,W3,W4) \
+    DIAGNOSTICS_BASE_ASSERT(::diagnostics::LEVEL_PROD,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_ASSERT_ACTION4(::diagnostics::LEVEL_PROD,NAME,COND,W1,W2,W3,W4))
+
+
+#define SYNEIGHT_PROD_CLASS_THROWING_INVARIANCE_ENTER DIAGNOSTICS_BASE_CLASS_THROWING_INVARIANCE_ENTER
+#define SYNEIGHT_PROD_CLASS_THROWING_INVARIANCE_EXIT  \
+    DIAGNOSTICS_BASE_CLASS_THROWING_INVARIANCE_EXIT(::diagnostics::LEVEL_PROD,\
+                                           SYNEIGHT_NR_WHAT_DEFAULT, \
+                                           SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY,\
+                                           SYNEIGHT_BASE_EXCEPTION_TYPE,\
+                                           SYNEIGHT_BASE_EXCEPTION_STR_WHAT)
+
+#define SYNEIGHT_PROD_CLASS_INVARIANCE_GUARD DIAGNOSTICS_BASE_CLASS_INVARIANCE_GUARD
+#define SYNEIGHT_PROD_CLASS_INVARIANCE_ENTER DIAGNOSTICS_BASE_CLASS_INVARIANCE_ENTER
+#define SYNEIGHT_PROD_CLASS_INVARIANCE_EXIT  DIAGNOSTICS_BASE_CLASS_INVARIANCE_EXIT
+
+#  define SYNEIGHT_PROD_CLASS_INVARIANCE_ASSERT  DIAGNOSTICS_BASE_CLASS_INVARIANCE_ASSERT
+
+#define SYNEIGHT_PROD_EXCEPTIONLESS_BLOCK_ENTER  DIAGNOSTICS_BASE_EXCEPTIONLESS_BLOCK_ENTER
+#define SYNEIGHT_PROD_EXCEPTIONLESS_BLOCK_EXIT  \
+    DIAGNOSTICS_BASE_EXCEPTIONLESS_BLOCK_EXIT(::diagnostics::LEVEL_PROD,\
+                                              SYNEIGHT_NR_WHAT_DEFAULT, \
+                                              true,\
+                                              SYNEIGHT_HANDLE_TEST_EXCEPTION_EXPLICITLY,\
+                                              SYNEIGHT_BASE_EXCEPTION_TYPE,\
+                                              SYNEIGHT_BASE_EXCEPTION_STR_WHAT)
+
+
+#if SYNEIGHT_DEBUG__LEVEL__ > 0
+
+#  define SYNEIGHT_PROD_CHECK(NAME,COND) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_PROD,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           "condition=\"" #COND "\" excep.name=\"" #NAME "\"",\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION(::diagnostics::LEVEL_PROD,NAME,COND))
+#  define SYNEIGHT_PROD_CHECK0(NAME,COND) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_PROD,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION0(NAME).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION0(::diagnostics::LEVEL_PROD,NAME,COND))
+#  define SYNEIGHT_PROD_CHECK1(NAME,COND,WHAT1) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_PROD,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION1(NAME,WHAT1).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION1(::diagnostics::LEVEL_PROD,NAME,COND,WHAT1))
+#  define SYNEIGHT_PROD_CHECK2(NAME,COND,WHAT1,WHAT2) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_PROD,NAME,\
+                           SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION2(NAME,WHAT1,WHAT2).what(),\
+                           (COND),\
+                           SYNEIGHT_FAILED_CHECK_ACTION2(::diagnostics::LEVEL_PROD,NAME,COND,WHAT1,WHAT2))
+#  define SYNEIGHT_PROD_CHECK3(NAME,COND,W1,W2,W3) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_PROD,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION3(NAME,W1,W2,W3).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_CHECK_ACTION3(::diagnostics::LEVEL_PROD,NAME,COND,W1,W2,W3))
+#  define SYNEIGHT_PROD_CHECK4(NAME,COND,W1,W2,W3,W4) \
+    DIAGNOSTICS_BASE_CHECK(::diagnostics::LEVEL_PROD,NAME,\
+                            SYNEIGHT_NR_WHAT_DEFAULT,\
+                           ::std::string("condition=\"" #COND "\" ")+ SYNEIGHT_EXCEPTION4(NAME,W1,W2,W3,W4).what(),\
+                            (COND),\
+                            SYNEIGHT_FAILED_CHECK_ACTION4(::diagnostics::LEVEL_PROD,NAME,COND,W1,W2,W3,W4))
+
+
+#else
+
+#  define SYNEIGHT_PROD_CHECK(NAME,COND) \
+    do { if(!(COND)) { SYNEIGHT_FAILED_CHECK_ACTION(::diagnostics::LEVEL_PROD,NAME,COND); } } while(false)
+#  define SYNEIGHT_PROD_CHECK0(NAME,COND) \
+    do { if(!(COND)) { SYNEIGHT_FAILED_CHECK_ACTION0(::diagnostics::LEVEL_PROD,NAME,COND); } } while(false)
+#  define SYNEIGHT_PROD_CHECK1(NAME,COND,STR_WHAT) \
+    do { if(!(COND)) { SYNEIGHT_FAILED_CHECK_ACTION1(::diagnostics::LEVEL_PROD,NAME,COND,STR_WHAT); } } while(false)
+#  define SYNEIGHT_PROD_CHECK2(NAME,COND,WHAT1,WHAT2) \
+    do { if(!(COND)) { SYNEIGHT_FAILED_CHECK_ACTION2(::diagnostics::LEVEL_PROD,NAME,COND,WHAT1,WHAT2); } } while(false)
+#  define SYNEIGHT_PROD_CHECK3(NAME,COND,WHAT1,WHAT2,WHAT3) \
+    do { if(!(COND)) { SYNEIGHT_FAILED_CHECK_ACTION3(::diagnostics::LEVEL_PROD,NAME,COND,WHAT1,WHAT2,WHAT3); } } while(false)
+#  define SYNEIGHT_PROD_CHECK4(NAME,COND,WHAT1,WHAT2,WHAT3,WHAT4) \
+    do { if(!(COND)) { SYNEIGHT_FAILED_CHECK_ACTION4(::diagnostics::LEVEL_PROD,NAME,COND,WHAT1,WHAT2,WHAT3,WHAT4); } } while(false)
+
+#endif
+
+#define SYNEIGHT_METHOD_GUARD(STR_WHAT) SYNEIGHT_AUDIT_METHOD_GUARD(STR_WHAT); SYNEIGHT_AUDIT_CLASS_INVARIANCE_GUARD 
+
+\end{verbatim}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End: 
+% vim:ts=4:sw=4

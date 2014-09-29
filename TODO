@@ -1,0 +1,55 @@
+-------------------------------------------------------------------------------
+Todo
+-------------------------------------------------------------------------------
+
+Note: Recursively grep for 'TODO' and 'FIXME' in all files for more items.
+
+-------------------------------------------------------------------------------
+
+ * License?
+
+ * Is GNU make a requirement, or do other make versions work, too?
+
+ * What Warnings should be used with g++? (-Wall -Wold-style-cast)
+
+ * Should missing documentation tools like latex, dvips etc. cause configure
+   to quit with an error?
+
+ * Warn the user, if configure doesn't find all tools needed to build the
+   documentation.
+
+ * Use AC_CONFIG_AUX_DIR to put automatically created files in an extra dir?
+
+ * Write checks for Log4Cpp, ACE.
+
+ * SYNEIGHT__SWITCH__EXCEPTION_NO_THROW macro should be connected with autoconf
+   checking for throw() need.
+
+ * When is another @author added to a file? Beginning with 4 lines or more
+   of non-trivial contributions?
+
+ * Why @file? Why @class? Can't this be found out automatically by doxygen?
+
+ * Replace 'grep -s', which is unportable.
+
+ * Which level names should be used for '@brief [LEVEL: foo]'?
+
+ * Write manpages for several tools and binaries?
+
+ * Rename binaries foo.b to foo when installing them in e.g. /usr/local?
+
+ * Properly document the build environment and scripts.
+
+ * Generate Makefile.am's for m4/ and doc/?
+
+ * If doxygen is not found, 'make docs-api' should abort with a warning.
+
+ * Fix bootstrap for Solaris.
+
+ * What are the final libraries that should be installed?
+
+ * What are the headers that should be installed (where, which?)
+
+ * Should tests (*_t) be compiled always? Should they be installed with make install? Where should they be installed?
+
+ * Should autoaal also generate makefiles for doc directory?

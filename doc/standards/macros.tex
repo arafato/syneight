@@ -1,0 +1,1093 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Macros}
+\label{cha:macros}
+
+\section{Reasons for using Macros}
+\label{sec:reasons-using-macros}
+
+Macros are a powerful tool which is useful in C++-development with
+respect to three areas:
+\begin{description}
+\item[Code Reflection:] The program should access some property of the
+  code itself, such as file name, source line, or a string which
+  represents a given C++-expression.
+\item[Redundancy Reduction:] Instead of repeating a certain code
+  fragment several times, macros can be used in many cases to generate
+  the code properly. 
+\item[Conditional Compilation:] The same source should be compiled in
+  different ways. Typical usages arise in the context of platform
+  portability and debugging levels. 
+\end{description}
+%
+In all three cases, the preprocessor is one option to solve the
+problem. However, there is one definite rule above all other rules
+with respect to macros.
+%
+\begin{rule*}{Avoid Macros if possible}
+  Use macros if and only if there is no other sufficient way to
+  achieve the same result.
+\end{rule*}
+%
+The key-work in the above statement is \emph{sufficient}. So what is
+sufficient? We detail this issue in the following subsections.
+
+
+\subsection{Code Reflection}
+\label{sec:code-reflection}
+
+First of all, code reflection does not work without macros. Thus if
+you need the line number of some statement, then you need the
+preprocessor. However, these situations will be covered to a vast
+degree by the annotations of chapter \vref{cha:annotations}.  These
+standard annotations are justified by the following rule.
+%
+\begin{rule*}{Use Macros for Code Reflection}
+  If you need to access the file name, the base file name\footnote{The
+    base file is the file which is given to a compiler to be
+    compiled. In most cases, this file will be a *.cpp file, which
+    includes some *.hpp files. If you write a macro in some *.hpp file,
+    you can access the *.cpp file which includes this *.hpp file.\\
+                                %
+    For example, if you have {\tt a.hpp} using some macro {\tt
+      SYNEIGHT\_BASE\_FILE\_NAME} and two files named {\tt b.cpp} and
+    {\tt c.cpp}
+    which include {\tt a.hpp}, then {\tt SYNEIGHT\_BASE\_FILE\_NAME} will
+    expand to {\tt b.cpp} in the first case, while it expands to {\tt
+      c.cpp} in the second case.},
+  %
+  the current source code line number, or some stringized expression.
+\end{rule*}
+%
+
+
+\subsection{Redundancy Reduction}
+\label{sec:redundancy-reduction}
+
+Next, redundancy often occurs when you need parameter lists (ordinary
+method/procedure parameters and template parameters) of variable length
+-- if some type-less solution is not an option (most of the times, it
+is not), then it is necessary to define the construct with every
+possible parameter list, i.e., to enumerate the construct for one
+parameter, two parameters etc. To avoid this redundancy, we use
+macros.
+%
+\begin{rule*}{Use Macros for Parameter Lists of Variable Length}
+  In situations where you need to define a class of a procedure which
+  takes a variable number of arguments without loosing
+  typing, use macros.
+\end{rule*}
+%
+%
+There might be other cases when macros are unavoidable to write code
+without unwanted redundancy\footnote{While we strive for code which
+  has as few redundant parts as possible, we accept redundancy if the
+  language does not give us a clean way to remove it, or if the
+  redundancy gives us independence which helps to maintain the overall
+  architectural integrity.}. We will add the cases when they appear.
+
+
+\subsection{Conditional Compilation}
+\label{sec:cond-comp}
+
+Finally, we have conditional compilation. It is hard to state a
+general rule for situations which require conditional compilation. The
+following rule incorporates the general indicators when conditional
+compilation is necessary.
+%
+\begin{rule*}{Use Macros for Conditional Compilation if C++ mechanisms are
+    insufficient}
+  The main reasons to use conditional compilation using C++ macros are the
+  following:
+  \begin{itemize}
+  \item C++-code would be slow.
+  \item A lot of unnecessary code would be emitted.
+  \item C++ cannot be used to encapsulate well the varying aspect.
+  \end{itemize}
+  If one of these rules matches, use conditional compilation.
+\end{rule*}
+%
+The last case of the above rule is a bit hard to understand.
+Basically, when you are varying the flow of control, e.g., introduce
+new nested blocks, or add an additional exception handler, you cannot
+expect to find a clean way to handle the case with C++ directly.\\
+%
+There is one clear cut situation when you need conditional
+compilation, namely platform independence.
+%
+\begin{rule*}{Use Macros for Conditional Compilation to adapt to the Platform}
+  To achieve platform independence with respect to a certain set of
+  platforms, use conditional compilation. 
+\end{rule*}
+
+\section{General Macro Rules}
+\label{sec:general-macro-rules}
+
+There are only a few general naming convention for macros in \SYNEIGHT\ 
+-- all other rules are specific to the corresponding group.
+%
+First, we require a prefix for all macros defined within the \SYNEIGHT
+sources.
+%
+\begin{rule*}{Macro Prefixing}
+    Every macro of \SYNEIGHT starts with {\tt SYNEIGHT}.
+\end{rule*}
+
+Macros can be conditional, such as if-then-else constructs. The
+question is whether we use indentation and how. The following rules
+define our indentation with respect to macros.
+%
+\begin{rule*}{Macro Indentation}
+  After a conditional preprocessor directive (such as {\tt \#if,
+    \#ifdef, \#else}\dots) the indentation has to increase or decrease
+  by one step\footnote{In our case increasing/decreasing the number of
+    tabs.} with respect to other preprocessor code.\\
+  %
+  \textbf{We indent preprocessor code and usual C++ code completely
+  independently.}
+  %
+  Note that the {\tt \#} must be the first sign of the line, i.e., we
+  use for example {\tt \# <INDENT> if}.
+  %
+  This rule has one exception, namely internal include
+  guards\footnote{See subsection \vref{sec:macro-groups}.}. The
+  directives of an internal include guard do not affect indentation.
+\end{rule*}
+
+
+\section{Internal Macros}
+\label{sec:internal-macros}
+
+%
+If a macro is used internally, then it is prefixed with {\tt
+  SYNEIGHT\_\_INTERNAL}. It is not possible to give a clear cut
+definition of a macro that is internal. In principal, we say that a
+macro is internal, if it used in a predefined set of source
+  locations.
+%
+\begin{rule*}{Internal Macro Prefixing}
+  Every internal macro of \SYNEIGHT starts with {\tt
+    SYNEIGHT\_\_INTERNAL}.
+\end{rule*}
+%
+An internal macros should only be used in a limited set of locations,
+i.e., the programmer who writes the internal macros should \emph{know}
+all direct uses of the internal macro. For example, a sub-macro of
+another macro is an internal macro. A macro which is used to emit some
+code in a single location is also internal. 
+
+If the macro is used as sub-macro of some other macro, then it is used
+at a limited set of locations, but it cannot be undefined: The macro
+is used indirectly at yet unknown locations. 
+%
+On the other hand, if an internal macro does not serve as a sub-macro,
+usually it can be undefined after is usage. An example for such a
+situation is the following: 
+%
+\begin{verbatim}
+#define SYNEIGHT__INTERNAL__EMIT__TO_STRING(COUNT) \
+template< SYNEIGHT__BASE__EMIT__PARAMETER(typename T,COUNT) > \
+::std::string to_string( SYNEIGHT__BASE__EMIT__PARAMETER2(T,COUNT,const & t)) \
+{ \
+    ::std::ostringstream os; \
+     os SYNEIGHT__BASE__EMIT__PARAMETER_USE(<< t, SYNEIGHT__BASE__DEC(COUNT) , << ' ') \
+        << t ## COUNT; \
+    return os.str(); \
+}
+SYNEIGHT__BASE__FOR_0_TO(SYNEIGHT__INTERNAL__EMIT__TO_STRING,SYNEIGHT__BASE__FOR_0_TO_MAX);
+#undef SYNEIGHT__INTERNAL__EMIT__TO_STRING
+\end{verbatim}
+Here, {\tt SYNEIGHT\_\_INTERNAL\_\_EMIT\_\_TO\_STRING} is used only to
+emit the code and thus it should not be used afterwards. In such a
+situation, we require, that the internal macro is undefined (as above)
+to avoid misuse.
+%
+\begin{guideline*}{Limit Use of Internal Macros}
+  Undef an internal macro after its usage if this is possible.
+\end{guideline*}
+%
+There are no further rules on internal macros, they are an
+implementation detail.
+
+\section{Base Macros}
+\label{sec:base-macros}
+
+Macros which are reused in different contexts, such as helper macros
+to emit a template parameter list of variable length, will be
+collected into a dedicated library of base macros. Each of these
+macros will be prefixed with {\tt SYNEIGHT\_\_BASE}.
+
+\begin{rule*}{Base Macro Naming Convention}
+  A base macro must be named 
+  \begin{verbatim}
+    SYNEIGHT__BASE__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which does not contain
+  more than two consecutive underscores.
+\end{rule*}
+%
+Mostly, base macros are used to build more complex macros. In
+particular, there will be a large group of macros which are used to
+emit code efficiently. 
+
+
+\section{Macro Groups}
+\label{sec:macro-groups}
+
+In this subsection, we subdivide macros into seven groups. This
+subdivision is different from the categorization of the last section
+which presented the three motivating reasons to use macros.  The
+categorization presented here, is oriented towards the way a macro is
+actually used.\\
+%
+From the point of view of a developer who uses a macro, the original
+motivation for introducing the macro is not important compared to the
+interface of the macro, i.e., the defined behavior of the macro. 
+%
+We divide the macros into seven groups:
+%
+\begin{description}
+\item[Include Guards:] Controlling whether a file is to be included or
+  not.
+\item[Macros controlling conditional compilation:] Include guards are
+  an example -- however we treat them as special case. So what remains
+  are macros that are used as arguments in some preprocessor directive
+  that controls the code to be compiled. 
+\item[Macros for Code Parameterization:] These macros are used to
+  parameterize a build. In contrast to a macro which controls
+  conditional compilation, a parameterizing macro is not used to
+  switch some feature on or off, but to set some value, e.g., the
+  current debugging level.
+\item[Macros used within C++-Code:] Macros which are used as ordinary
+  statements within C++ code.
+\item[Code Generating Macros:] Macros used to generate some C++ code
+  -- the user is only using the C++ construct, i.e., the macros are
+  only a way of writing this code. 
+\item[Other Macros:] There remain some macros which do not belong to
+  any of the categories described so far. 
+\end{description}
+%
+Each of these groups will be governed by different rules for writing
+them. Also, the user of a macro should recognize the category of a
+macro by reading its name, i.e., the category will be reflected in the
+name. We will present the rules of each group in an own subsection.
+%
+
+
+\section{Include Guards}
+\label{sec:include-guards}
+
+\begin{rule*}{Include Guard Naming Convention}
+  An include guard has the following naming scheme
+  \begin{verbatim}
+    SYNEIGHT__DIR1__...__DIRn__FILE_HPP
+  \end{verbatim}
+  for an include file {\tt dir1/\dots/dirn/file.hpp}.
+\end{rule*}
+%
+\begin{rule*}{Include Guard Position}
+  The include guard is always written as 
+  \begin{verbatim}
+    #ifndef SYNEIGHT__DIR1__...__DIRn__FILE_HPP
+    #define SYNEIGHT__DIR1__...__DIRn__FILE_HPP
+    <CODE>
+    #endif
+  \end{verbatim}
+  where {\tt <CODE>} is the code contained in the include file. 
+  \textbf{Every include file has to have an include guard.}
+\end{rule*}
+%
+This way of preventing the double inclusion of the same file into the
+same compilation unit\footnote{The result of the preprocessing stage
+  which is fed into the compiler} is called internal include
+guarding. 
+%
+Another way of achieving the same logical result is called external
+include guarding. In this case you write 
+\begin{verbatim}
+    #ifndef SYNEIGHT__DIR1__...__DIRn__FILE_HPP
+    #  include <syneight/dir1/.../dirn/file.hpp>
+    #endif
+\end{verbatim}
+The only difference is performance. In the case of internal include
+guards, the preprocessor has to read the entire file, independently of
+whether it is used or not. This might be unimportant in small
+projects, however, in large projects, it is easy to construct
+realistic cases which cause a file to included $n^2$ times if $n$
+files are in the project. If this file is 40, 50 kB large, this can
+slow down compilation times. 
+%
+Thus external include guards are used, they avoid the problem by
+checking whether the file has been included before including it. 
+%
+
+The usage of include guards is limited, more precisely, include guards
+are only allowed to appear in internal and external include guards. To
+express the need to include some file, we will use conditional
+inclusion switches, see subsection \vref{sec:cond-incl}.
+\begin{rule*}{Limited use of Include Guards}
+  An include guard is only allowed to appear in external and internal
+  include guards.
+\end{rule*}
+
+%% In some \textbf{rare} cases, it might be necessary to place code
+%% outside of the common include guard. These cases have to be defined
+%% specifically and have to be used with great care. If a developer
+%% thinks this is necessary, 
+%
+%% If you position code outside of the include guard, you need to guard
+%% it explicitly with some other guard. Therefore, if code is outside of
+%% an include guard, it has to be a possibly guarded include directive.
+
+%
+%% The usage of external include guards and the placement of code outside
+%% of the include guards will be subject to \textbf{specific rules} described in 
+%% subsection \vref{sec:relat-betw-files}.
+
+
+
+\section{Macros Controlling Conditional Compilation}
+\label{sec:macr-contr-cond}
+
+We call a macro which controls conditional compilation a
+\emph{switch.} Switches are never used directly in the code but only
+for governing {\tt \#if} directives. The body (or bodies) of these
+conditional statements contain further macro definitions or plain
+C++-code.
+%
+\begin{rule*}{Conditional Compilation Switch Naming Convention}
+  A macro controlling conditional compilation is called a public
+  switch and is named as
+  \begin{verbatim}
+    SYNEIGHT__SWITCH__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which matches the macro
+  naming conventions and does not contain more than two consecutive
+  underscores.
+\end{rule*}
+%
+To make the term ``controlling conditional compilation'' clear, we use
+the following definition.
+%
+\begin{definition*}{Public Switch}
+  \label{def:public-switch}
+  All macros which are potentially defined by some client of \SYNEIGHT
+  to control the compilation of \SYNEIGHT (or one of its modules), are
+  public switches (named {\tt SYNEIGHT\_\_SWITCH}).\\
+\end{definition*}
+%
+Typically, these macros are defined as command-line arguments of the
+compiler invocations to build \SYNEIGHT. Switches are global to
+\SYNEIGHT, i.e., linking units which have been compiled which different
+switches leads to undefined behavior.
+
+In contrast, there are internal switches, which represent derived
+decisions.
+\begin{definition*}{Internal Switch}
+  Internal Switches (named {\tt SYNEIGHT\_\_INTERNAL\_\_SWITCH}) are
+  either derived from the public switches and/or the platform features.
+\end{definition*}
+%
+
+The usage of a switch is restricted, as already sketched above. A
+switch is only allowed to appear as part of a conditional preprocessor
+statement and as expression in a C++-statement.
+%
+\begin{rule*}{Correct Usage of a Switch}
+  A switch is \textbf{only} allowed to be used either as part of an
+  boolean preprocessor expression which is part of a conditional
+  preprocessor statement based on one of the two keywords {\tt
+    \#if} and {\tt \#elif}.
+\end{rule*}
+%
+The above rule does not allow us to use switches in {\tt \#ifdef} or
+{\tt \#ifndef} statement. This is a feature, not an oversight. Code
+which uses a switch should fail to compile, if the switch has no
+defined value. A switch that would be based on being defined or not
+being defined is always implicitly defined. The above rule makes sure,
+that every use of a switch must be preceded by an explicit definition
+-- even if this definition is the default definition. Such a default
+definition still allows to change the default value at a central
+location.\\
+%
+Also, we disallow the direct usage of a switch in a C++
+expression. We decouple the switches from the macros which are used as
+expressions, since this allows to change both interfaces
+independently. For example, a switch might have the values 0, 1 and
+2. These values correspond to members of an enumeration with values
+$A=0$, $B=1$ and $C=2$. The enumeration is extended with a new value
+$D=3$ and the 2 should be mapped to $D$ now. Such a change can be
+facilitated easily, if a further level of redirection is setup from
+the very beginning.  
+%
+\begin{rule*}{Wrap Switches into Expression- and Statement-Macros}
+  \label{guide:wrap-switch}
+  If you need to use the value of a switch in C++-code, then the value
+  has to be wrapped into an expression/statement macro, see section
+  \vref{sec:expression-macros}.
+\end{rule*}
+
+
+In contrast, the definition of a switch (more precisely of its value)
+is allowed to use {\tt \#ifndef} and {\tt \#ifndef} statements to
+provide sensible default values. These values are set in dedicated
+configuration files such that all switches can be changed within a set
+of well-defined files (and the next rule enforces that these files are
+included in relevant compilation units).
+%
+\begin{rule*}{Default Values for Switches}
+  Every switch must have a default value. The definition of the
+  default value is always given as follows:
+  \begin{verbatim}
+    #ifndef SYNEIGHT__SWITCH__<NAME>
+    #  define SYNEIGHT__SWITCH__<NAME> <VALUE>
+    #endif
+  \end{verbatim}
+  Every switch has an associated definition file. This file must be
+  included if the component uses the switch. 
+  %
+  The default value is defined directly or indirectly (by the file which
+  is included) within this file.
+  %
+\end{rule*}
+%
+Following rule \vref{rule:global-config-first}, the definition file of a
+switch must include a global configuration file\footnote{ {\tt
+    <syneight/config/production.hpp>}, {\tt
+    <syneight/config/unittest.hpp>}, or {\tt
+    <syneight/config/testsupport.hpp>} -- see definition
+  \vref{def:global-config-file}.}.
+%
+Actually, the most fundamental switches are defined in these three
+files. If a switch is defined in one of these files, then is has to be
+defined according to rule  \vref{rule:global-config-file-hier}:
+%
+\begin{rule*}{Default Values in Global Configuration Files}
+  The global configuration files form a hierarchy (more precisely,
+  {\tt production.hpp} is refined by {\tt unittest.hpp}, which is in
+  turn refined by {\tt testsupport.hpp}).\\
+  %
+  If a switch is defined in a global configuration file $A$ then it
+  has to be defined in all global configuration files which refine
+  $A$.
+\end{rule*}
+%
+
+Therefore, the global configuration files can adapt the compilation
+process according to the needs of the corresponding use-case. At the same
+time, not every switch has to be defined in the global configuration
+files. It is important to keep the global configuration files small,
+since changing one of them means recompiling and relinking vast parts
+of the code -- a time-consuming task. In conclusion, a switch should
+be defined in one of the global configuration files only if
+necessary.
+%
+\begin{guideline*}{Keep Global Configuration Small: Switches}
+  If a switch has the same default value in all three configuration
+  cases, then do not define the switch in the global configuration
+  files but in a dedicated local configuration file which include the
+  corresponding global configuration file.
+\end{guideline*}
+
+
+In some cases, a switch must be set for a single compilation unit
+only. In this case, we use a local switch.
+%
+\begin{rule*}{Local Switch Naming Convention}
+  A macro controlling conditional compilation which is local to a
+  single compilation unit is called a local switch and is named as
+  \begin{verbatim}
+    SYNEIGHT__LOCAL__SWITCH__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which matches the macro
+  naming conventions and does not contain more than two consecutive
+  underscores.
+\end{rule*}
+%
+The rules with respect to the usage of a local switch are identical to
+the rules which govern the usage of public and internal
+switches. Typically, local switches are set before including any
+include file within the source of a corresponding compilation unit.
+
+To summarize the differences:
+\begin{itemize}
+\item A public switch is compile time setting which must be set
+  consistently between all compilation units linked together.
+\item An internal switch is a derived setting which is not set
+  directly by user but is derived by some preprocessor code. The
+  client is not allowed to refer to an internal switch.
+\item A local switch is a compile time setting which might be
+  set differently between compilation units which are linked
+  together. 
+\end{itemize}
+
+\subsection{Conditional Inclusion}
+\label{sec:cond-incl}
+
+A special case of conditional compilation is the conditional inclusion
+of files. The case arises when 
+\begin{itemize}
+\item different compile time switches require different interfaces to
+  be included,
+\item it is not possible to include the corresponding files
+  immediately, since some other code needs to be processed before
+  including the interface.
+\end{itemize}
+These situations are rare -- within \SYNEIGHT we will find such
+situations at the core of the configuration and annotation
+framework.
+
+\begin{rule*}{Conditional Inclusion Switch Naming Convention}
+  A macro controlling the conditional inclusion of files is named as
+  follows: 
+  \begin{verbatim}
+    SYNEIGHT__NEEDS__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is the file name (complete with path). The switch
+  has the value 0 if the file is not required to be included. If its
+  value becomes 1, then the file has to be included. 
+\end{rule*}
+%
+\begin{rule*}{Conditional Inclusion Switch Setting}
+  A conditional inclusion switch is initialized as follows:
+\begin{verbatim}
+  #ifdef SYNEIGHT__NEEDS__<NAME> 
+  #  error SYNEIGHT__NEEDS__<NAME> already initialized
+  #else
+  #  define SYNEIGHT__NEEDS__<NAME> 0
+  #endif
+\end{verbatim}
+  If it is determined that the switch must be set to 1, the following
+  code has to be used:
+\begin{verbatim}
+  #if SYNEIGHT__NEEDS__<NAME> == 0
+  #  undef SYNEIGHT__NEEDS__<NAME>
+  #  define SYNEIGHT__NEEDS__<NAME> 1
+  #endif
+\end{verbatim}
+  Finally, a conditional inclusion switch must be applied in the
+  following way. Note that it has to undefined at the end.
+  TODO: Why?
+\begin{verbatim}
+  #if SYNEIGHT__NEEDS__<NAME> == 1
+  #  include <NAME> 
+  #endif
+  #undef SYNEIGHT__NEEDS__<NAME>
+\end{verbatim}
+\end{rule*}
+
+\begin{guideline*}{Initialization and Application of Conditional Inclusion}
+  The initialization block and the application block should be located
+  in the same file.
+\end{guideline*}
+
+\subsection{Optional Features}
+\label{sec:optional-features}
+
+Another special case of switches are optional features. The presence
+of some features might be dependent on the platform, or on the some
+other switches, e.g., a compilation switch might allow to switch
+on/off a certain feature -- if it is present, some other features
+might require higher overhead. Thus it has been made a compile-time
+switchable.  
+%
+Regardless of the reason for the optional feature, we use the
+following convention.
+
+\begin{rule*}{Optional Feature Switch}
+  A macro indicating (and optionally controlling) the presence of an
+  optional feature is named as follows:
+  \begin{verbatim}
+    SYNEIGHT__HAVE__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is the name of the feature. 
+\end{rule*}
+%
+\begin{guideline*}{Optional Feature Switch Value}
+  An optional feature switch should have the value 0 if the feature is
+  not present and the value 1 if it is present. 
+  %
+  If there are more than two possible values, consider to use two or
+  more switches.
+\end{guideline*}
+
+
+
+
+\subsection{Macros for Code Parameterization}
+\label{sec:macros-for-code-parameterization}
+
+\TODO{add stuff}
+
+\begin{rule*}{Public Parameter}
+  \label{def:public-parameter}
+  A macro which is used to parameterize the compilation of some
+  component of \SYNEIGHT has to adhere the following naming convention:
+  \begin{verbatim} 
+    SYNEIGHT__PARAM__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is the name of the parameter. {\tt <NAME>} is not
+  allowed to contain more than two consecutive underscores.  Such a
+  macro is allowed to take parameters.
+\end{rule*}
+
+
+\begin{rule*}{Internal Parameter}
+  A macro which is used to parameterize the compilation of some
+  component of \SYNEIGHT has to adhere the following naming convention:
+  \begin{verbatim} 
+    SYNEIGHT__INTERNAL__PARAM__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is the name of the parameter. {\tt <NAME>} is not
+  allowed to contain more than two consecutive underscores.  Such a
+  macro is allowed to take parameters.
+\end{rule*}
+
+
+
+\section{Macros within ordinary C++-Code}
+\label{sec:macr-within-ordinary-cpp-code}
+
+Macros that appear in regular C++-code are described in this
+section. They can be further categorized into four groups.
+\begin{description}
+\item[Expression Macros:] Such macros should behave like procedure
+  calls. 
+\item[Fragments Macros:] Such macros contain a sequence of statements.
+  A developer using them must be careful -- they cannot be used as
+  sub-expressions or after an if-statement without enclosing braces.
+\item[Block Macros:] Such macros always come as pairs, one macro to
+  open the block, and another to close the block. That is to say,
+  these macros setup some context.
+\item[Guard Macros:] Such macros setup a guard within the surrounding
+  block, i.e., they execute some code when the program counter passes
+  them the first time, and execute some other code, when the
+  surrounding block is left.
+\end{description}
+
+
+\begin{rule*}{Macros within ordinary C++-Code take arguments}
+  All macro types of this section take optionally arguments. If there
+  is a family of related macros which take different number of
+  arguments, then these macros have to suffixed with the number of
+  actual arguments.
+\end{rule*}
+
+\subsection{Expression Macros}
+\label{sec:expression-macros}
+
+The naming convention of Expression Macros is the default, i.e.,
+whatever is not explicitly marked to be member of another macro group
+is an expression macro. They are the most safe form of macros, thus
+they should be default. 
+
+\begin{rule*}{Expression Macro Naming Convention}
+  A macro to be used as expression is named
+  \begin{verbatim}
+    SYNEIGHT__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which does not contain
+  more than two consecutive underscores is not indicating membership
+  to any other macro group (e.g., {\tt <NAME>} is not allowed to start
+  with {\tt SWITCH}).
+\end{rule*}
+
+These macros should behave like ordinary procedure calls to fit into
+the C++-syntax as seamless as possible. 
+%
+\begin{rule*}{Expression Macros must behave like Procedures}
+  Each macro to be used as expression must 
+  \begin{itemize}
+  \item require to type a ``;'' at its end,
+  \item and must be a single C++-expression.
+  \end{itemize}
+\end{rule*}
+The latter item in the above rule requires that a definition such as 
+\begin{verbatim}
+#define SYNEIGHT__<NAME>(A,B) A=B; B=0 
+\end{verbatim}
+is invalid since 
+\begin{verbatim}
+if(condition) SYNEIGHT__<NAME>(a,b);
+\end{verbatim}
+would give 
+\begin{verbatim}
+if(condition) a=b; b=0;
+\end{verbatim}
+which is certainly not intuitive. 
+%
+To achieve this requirement we give the following rule:
+\begin{rule*}{Expression Macro Definition}
+  The definition of an expression macro must either match one of the
+  following forms, where {\tt <C++-Expression>} is an C++-expression
+  without tailing semicolon and {\tt <C++-Statements>} is an arbitrary
+  sequence of C++-statements.
+  \begin{itemize}
+  \item \begin{verbatim}
+#define SYNEIGHT__<NAME> <C++-Expression>
+\end{verbatim}
+    \item 
+\begin{verbatim}
+#define SYNEIGHT__<NAME> do { <C++-Statements> } while(false)
+\end{verbatim}
+  \end{itemize}
+\end{rule*}
+%
+If an expression macro should be a no-op, we use the following form.
+\begin{rule*}{Noop Expression Macros}
+  A macro to be used as an expression, which does nothing, has to be
+  defined as follows:
+\begin{verbatim}
+#define SYNEIGHT__<NAME> ((void)0)
+\end{verbatim}
+ \end{rule*}
+
+
+\subsection{Fragment Macros}
+\label{sec:fragment-macros}
+
+Sometimes, it is not possible to define a recurring code fragment in
+terms of an expression. For example, if you need to declare a set of
+interrelated variables within a block and if you need to access all of
+them, you need to a sequence of statements to do so. Because of the
+limited usage of such macros, we mark them as fragments.
+
+\begin{rule*}{Fragment Macro Naming Convention}
+  A fragment macro is named according to the following convention:
+  \begin{verbatim}
+    SYNEIGHT__FRAGMENT__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which does not contain
+  more than two consecutive underscores.
+\end{rule*}
+
+\begin{rule*}{Fragment Macro Definition}
+  The definition of an fragment macro must match the
+  following form, where {\tt <C++-Expression>} is an C++-expression
+  without tailing semicolon and {\tt <C++-Statements>} is an arbitrary
+  sequence of C++-statements.
+\begin{verbatim}
+#define SYNEIGHT__FRAGMENT__<NAME> <C++-Statements> <C++-Expression>
+\end{verbatim}
+\end{rule*}
+%
+The above definition enforces to entail an application of the macro
+with a semicolon.
+
+\begin{guideline*}{Avoid Fragment Macros}
+  If possible, formulate a macro as expression macro or embed it into
+  a block macro pair.
+\end{guideline*}
+
+
+\subsection{Block Macros}
+\label{sec:block-macros}
+
+A block macros pair has to adhere the following naming convention.
+%
+\begin{rule*}{Block Macro Naming Convention}
+  A pair of block macros is named according to the following convention:
+  \begin{verbatim}
+    SYNEIGHT__BEGIN__<NAME>
+    SYNEIGHT__END__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which does not contain
+  more than two consecutive underscores.
+\end{rule*}
+%
+The definition of a block macro must follow the following rules:
+%
+\begin{rule*}{Block Macro Definition}
+  The definition of a block macro pair must match the following form,
+  where {\tt <C++-Expression>} is an C++-expression without tailing
+  semicolon and {\tt <C++-Statements>} is an arbitrary sequence of
+  C++-statements.
+  \begin{verbatim}
+    #define SYNEIGHT__BEGIN__<NAME> do { <C++-Statements> { <C++-Expression>
+    #define SYNEIGHT__END__<NAME> } } while(false)
+  \end{verbatim}
+  If the {\tt <C++-Statements>} is an empty sequence, then the one
+  pair of braces can be omitted. 
+\end{rule*}
+%
+The pair is to be used in the following form, where {\tt
+  <C++-Statements>} is an arbitrary sequence of C++-statements.
+\begin{verbatim}
+    SYNEIGHT__BEGIN__<NAME>;
+    <C++-Statements>
+    SYNEIGHT__END__<NAME>;
+\end{verbatim}
+%
+The consequence of the above rule is that 
+\begin{itemize}
+\item each usage of a block macro pair behaves like a single
+  C++-statement,
+\item both, the begin and end macro, must be entailed by a semicolon.
+\end{itemize}
+%
+Finally, sometimes, we need a noop-block definition, for example, when
+some switch turned off some feature. In such a case the following rule applies. 
+%
+\begin{rule*}{Noop Block Macros}
+  A block macro pair which does nothing, has to be
+  defined as follows:
+  \begin{verbatim}
+    #define SYNEIGHT__BEGIN__<NAME> do { ((void)0)
+    #define SYNEIGHT__END__<NAME> } while(false)
+  \end{verbatim}
+\end{rule*}
+
+
+
+\subsection{Guard Macros}
+\label{sec:guard-macros}
+
+A guard macro must behave syntactically like an expression macro. Only
+its naming convention and meaning is different. 
+%
+Guards are typically used to initialize or acquire some resource which
+has to be released at the end of the surrounding block. Depending on
+the concrete context, we will use plain C++-guards or guards which are
+wrapped into macros. The latter case occurs, when we need
+compile-time switching. 
+%
+\begin{rule*}{Block Macro Naming Convention}
+  A guard macro is named according to the following convention:
+  \begin{verbatim}
+    SYNEIGHT__GUARD__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which does not contain
+  more than two consecutive underscores.
+\end{rule*}
+
+\begin{remark*}{Guards typically come with block macro versions}
+  It is frequent pattern, to have a block macro pair and a guard which
+  implements the same functionality. Let us assume, we have a guard 
+  \begin{verbatim}
+    SYNEIGHT__GUARD__<NAME>
+  \end{verbatim}
+  then the following block pair might be a useful additional feature:
+  \begin{verbatim}
+    #define SYNEIGHT__BEGIN__<NAME> do { SYNEIGHT__GUARD__<NAME>; { ((void)0)
+    #define SYNEIGHT__END__<NAME> } } while(false)
+  \end{verbatim}
+  If the block variant is not defined, the user might be forced to
+  write frequently 
+  \begin{verbatim}
+    { 
+      SYNEIGHT__GUARD__<NAME>; 
+      <C++-Statements>
+    }
+  \end{verbatim}
+\end{remark*}
+
+
+\section{Code Generating Macros}
+\label{sec:code-gener-macr}
+
+The macros which are used to generate code can be divided into two
+groups: The macros which are specifically programmed to generate some code,
+and the macros which are used in general for code generation. 
+
+The first group is always used locally, i.e., the have to be undefined
+after their usage. There are no other general rules governing these
+macros, besides their naming.
+
+\begin{rule*}{Local Code Generating Macro Naming Convention}
+  A locally used code generating macro is named according to the
+  following convention:
+  \begin{verbatim}
+    SYNEIGHT__INTERNAL__EMIT__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which does not contain
+  more than two consecutive underscores.
+\end{rule*}
+
+\begin{rule*}{Undefine Code Generating Macros}
+  After using a locally used code generating macro, undefine it.
+\end{rule*}
+
+Second, there are the code generation macros which are reused. For
+example, a macro which can be used to generate a template parameter
+list will be useful in more than one context. Such macros are
+collected are integrated in the library of base macros. 
+%
+\begin{rule*}{Reusable Code Generating Macro Naming Convention}
+  A reusable code generating macro is named according to the
+  following convention:
+  \begin{verbatim}
+    SYNEIGHT__BASE__EMIT__<NAME>
+  \end{verbatim}
+  where {\tt <NAME>} is an arbitrary string which does not contain
+  more than two consecutive underscores.
+\end{rule*}
+
+
+
+\section{Namespace Macros}
+\label{sec:namespace-macros}
+
+We use the following macros to begin and end namespaces. The reason
+for using macros is twofold.
+
+\begin{itemize}
+\item First, it does not allow to close a namespace without writing its
+  name (the closing \} is not very verbose),
+\item and second, most editors make a fuss with respect to
+  indentation if {\tt namespace <NAME> \{} is written into the source
+  explicitly.
+\end{itemize}
+
+\begin{rule*}{Namespace Begin and End}
+  To place a code fragment {\tt <CODE>} inside of a namespace {\tt
+  <NAME>} we use the following construct:
+  \begin{verbatim}
+    SYNEIGHT__BEGIN__NAMESPACE__<NAME>;
+    <CODE>
+    SYNEIGHT__END__NAMESPACE__<NAME>;
+  \end{verbatim}
+  The macros are defined as follows:
+  \begin{verbatim}
+    #define SYNEIGHT__BEGIN__NAMESPACE__<NAME> namespace <NAME> {
+    #define SYNEIGHT__END__NAMESPACE__<NAME> }
+  \end{verbatim}
+\end{rule*}
+
+
+
+\section{Summary}
+\label{sec:summary}
+
+The following table summarizes all macro types which we will use in
+\SYNEIGHT. The fourth column, labeled \textbf{Arg}, describes
+whether a macro of the corresponding type is allowed to take
+arguments.
+
+\begin{center}\begin{footnotesize}\begin{tabular}{||l|p{5cm}|p{7cm}|c||}\hhline{|t:====:t|}
+\multicolumn{4}{||c||}{\textbf{Macro Types}}\\ \hhline{||----||}
+\textbf{Type}         & \textbf{Naming}& \textbf{Usage} &
+\textbf{Arg}\\ \hhline{|:====:|}
+Include Guard & 
+{\tt SYNEIGHT\_\_<NAME>\_\_INCLUDE\_GUARD }
+&    
+to ensure that a file is included at most once.
+& no \\ \hhline{||----||}
+
+Public Switch & 
+{\tt SYNEIGHT\_\_SWITCH\_\_<NAME>}
+&    
+the public compile-time switches. Must be set consistently between all
+compilation units to be linked together.
+& no \\ \hhline{||----||}
+
+Internal Switch & 
+{\tt SYNEIGHT\_\_INTERNAL\_\_SWITCH\_\_<NAME>}
+&    
+to control conditional compilation based on platform features and/or public switches.
+& no \\ \hhline{||----||}
+
+Local Switch & 
+{\tt SYNEIGHT\_\_LOCAL\_\_SWITCH\_\_<NAME>}
+&    
+to control conditional compilation for a single compilation
+unit. Typically set within the source of the corresponding unit.
+& no \\ \hhline{||----||}
+
+
+Conditional Inclusion & 
+{\tt SYNEIGHT\_\_NEEDS\_\_<NAME>}
+&    
+used to control the inclusion of files which cannot be included immediately.
+& no \\ \hhline{||----||}
+
+Optional Feature & 
+{\tt SYNEIGHT\_\_HAVE\_\_<NAME>}
+&    
+to represent features which are optionally present. The features can
+be enabled/disabled based on compile time switches and/or platform features.
+& no \\ \hhline{||----||}
+
+Public Parameter & 
+{\tt SYNEIGHT\_\_PARAM\_\_<NAME>}
+&    
+the public compile-time parameters. Must be set consistently between
+all compilation units which are linked together.
+& yes \\ \hhline{||----||}
+
+Internal Parameter & 
+{\tt SYNEIGHT\_\_INTERNAL\_\_PARAM\_\_<NAME>}
+&    
+compile time parameters which are derived from public parameters and/or
+the platform settings -- or parameters which are exist only for adaptability.
+& yes \\ \hhline{||----||}
+
+
+Expression & 
+{\tt SYNEIGHT\_\_<NAME>}
+&    
+to be used inside of ordinary C++-code; guaranteed to behave like a
+procedure call.
+& yes \\ \hhline{||----||}
+
+Fragment & 
+{\tt SYNEIGHT\_\_FRAGMENT\_\_<NAME>}
+&    
+to be used inside of ordinary C++-code; contains a sequence of C++-statements.
+& yes \\ \hhline{||----||}
+
+Block & 
+{\tt SYNEIGHT\_\_BEGIN\_\_<NAME>}
+{\tt SYNEIGHT\_\_END\_\_<NAME>}
+&    
+to be used to open/close a block which has some special properties
+defined by the macro pair.
+& yes \\ \hhline{||----||}
+
+Guard & 
+{\tt SYNEIGHT\_\_GUARD\_\_<NAME>}
+&    
+to setup a guard within the current block.
+& yes \\ \hhline{||----||}
+
+Reusable Code Generation & 
+{\tt SYNEIGHT\_\_BASE\_\_EMIT\_\_<NAME>}
+&    
+to emit code for the sake of redundancy elimination -- reusable macro.
+& yes \\ \hhline{||----||}
+
+Local Code Generation & 
+{\tt SYNEIGHT\_\_INTERNAL\_\_EMIT\_\_<NAME>}
+&    
+to emit code for the sake of redundancy elimination -- used locally.
+& yes \\ \hhline{||----||}
+
+
+%% Base is like internal -- its not a group of macros...
+%%
+%%Base & 
+%%{\tt SYNEIGHT\_\_BASE\_\_<NAME>}
+%%&    
+%%to be used by other macros as basis; fundamental preprocessor primitives.
+%%& yes \\ \hhline{||----||}
+
+Namespace  & 
+{\tt SYNEIGHT\_\_BEGIN\_\_NAMESPACE\_\_<NAME>}
+{\tt SYNEIGHT\_\_END\_\_NAMESPACE\_\_<NAME>}
+&    
+to open/close a namespace scope.
+& no \\ 
+\hhline{|b:====:b|}
+\end{tabular}\end{footnotesize}\end{center}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End: 
+% vim:ts=4:sw=4

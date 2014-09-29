@@ -1,0 +1,111 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Code Documentation}
+\label{cha:code-documentation}
+
+\section{File Documentation}
+\label{sec:file-documentation}
+
+The following code header should be used in \emph{every} source file, i.e. in
+every {\tt *.cpp} and {\tt *.hpp} file.
+
+\begin{verbatim}
+/*-----------------------------------------------------------------------------
+ * Syneight - A soft-realtime transaction monitor.
+ * Copyright (C) 2003-2004 The Syneight Group.
+ *
+ * TODO: License.
+ *---------------------------------------------------------------------------*/
+
+/**
+ * @file syneight/base/annotation/config.hpp                     (relative path)
+ *
+ * @author Real Name 1
+ * @author Real Name 2                                               (optional)
+ * @author $Author: hermanuw $                                 (svn Author tag)
+ *
+ * @version $Id: config.hpp 972 2004-07-14 19:14:34Z hermanuw $    (svn Id tag)
+ *
+ * @brief A brief description of the file.
+ *
+ * A long description of the file, possibly
+ * spanning multiple lines.
+ *
+ * @note Any notes of interest.
+ *
+ * @todo Any TODO-items.
+ */
+\end{verbatim}
+
+
+
+\section{Class Documentation}
+\label{sec:class-documentation}
+
+\begin{verbatim}
+/**
+ * @class CLASSNAME
+ *
+ * @brief A brief description of the class, when to use, what it
+ * does. This description should be not be longer than some lines.
+ *
+ * A longer description, which elaborates the brief one. It should 
+ * explain the major concepts involved, the groups of methods which
+ * make up the class. Reference other classes which are used in 
+ * conjunction with this class.
+ *
+ * @nosubgrouping
+ */
+\end{verbatim}
+
+
+\section{Group Documentation}
+\label{sec:group-documentation}
+
+\begin{verbatim}
+///////////////////////////////////////////////////////////////////////////////
+/**
+ * @name GROUPNAME
+ *
+ * Comments on the group. There is no brief. 
+ *
+ * @{
+ */
+public/private/protected:
+/// @}
+\end{verbatim}
+
+
+\section{Method Documentation}
+\label{sec:method-documentation}
+
+\begin{verbatim}
+/**
+ * @brief A short description of the functionality.
+ *
+ * A long description of the functionality.
+ *
+ * @pre  [CHECKLEVEL] CONDITION -> EXCEPTIONNAME
+ * ...
+ * @post CONDITION
+ * ...
+ */ 
+\end{verbatim}
+
+
+\section{Doxygen Guidelines}
+\label{sec:doxygen-guidelines}
+
+TODO.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "standards"
+%%% End: 
+% vim:ts=4:sw=4

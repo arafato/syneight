@@ -1,0 +1,166 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Motivation}
+
+\section{What is \SYNEIGHT}
+
+\SYNEIGHT is a server middle-ware for large-scale real-time simulations.
+One possible application running on top \SYNEIGHT is a so-called \MMORG.
+A \MMORG is an online game played over the internet providing a
+versatile and physically realistic virtual reality (the ``virtual game
+world'') in which paying subscribers/players and interact with each
+other according to changing story backgrounds.
+
+\MMORGS are so called Network Virtual Environments also known as \NVES.
+\NVES are audiovisual real world simulations supported by distributed
+computer systems. \NVES show the following main characteristics:
+
+\begin{description}
+	\item[interactive:] \NVES are expecting input from the outside and
+		give feedback based on it.
+	\item[immersive:] you can enter the simulated world, freely move
+		around and influence it.
+	\item[multi-sensory:] \NVE is getting it's input from multiple
+		sensors.
+	\item[3D-synthetic:] the simulated world is a 3D world and not
+		2D planar in any manner.
+	\item[distributed:] \NVE is running on a cluster and can be
+		accessed over network. That means that the actors are
+		distributed over many computing nodes. Additionally to
+		that the system itself is running in a distributed
+		(clustered) environment.
+\end{description}
+
+\SYNEIGHT has to simplify to create such environments so that they can
+easily provide the listed characteristics.
+
+To meet that goal \SYNEIGHT has been designed with the following
+characteristics:
+\begin{itemize}
+        \item High IO efficiency
+        \item Very good scalability under high load
+        \item Extensive modularity
+        \item Zero or nearly zero maintenance and failure downtime
+        \item Very flexible, clean and stable application programmers interface
+\end{itemize}
+
+At last \SYNEIGHT can be described as an object oriented execution
+environment for clustered applications. It is insulated, so applications
+do not have to care about the implementation of the clustering (for
+example lock management and parallelism). The application programmer is
+only specifying what he/her wants and not how he/her wants it.
+
+\section{What is not \SYNEIGHT}
+
+In the above section we have described what \SYNEIGHT is and what it
+should provide. Now it is important to describe what \SYNEIGHT is not and
+what it does not need or must not provide. The main three not's are:
+
+\begin{itemize}
+        \item not a distributed shared memory system
+        \item not a relational database
+        \item not an object oriented client-server database
+\end{itemize}
+
+Some of these not's may seem strange and contradictory to the
+description provided in previous section.
+
+\subsection{Not a distributed shared memory system?}
+
+Distributed shared memory systems (also called \DSM-systems) have the
+following properties:
+
+\begin{description}
+	\item[low-level:] the developer has to care about how all things
+		are done, for example how locking is implemented
+	\item[algorithmic:] it is making it easier to implement a shared
+		memory. It is algorithm centric. So using a \DSM-system
+		one has to take care how the application algorithm is
+		implemented so that it works with \DSM-system.
+\end{description}
+
+In contrary \SYNEIGHT is high level. You do not have to think about how
+things are done. You only ask \SYNEIGHT to do something. It does not mean
+that everything is done automatically. One has to take care about the
+parallelism but only in means of insulation levels.
+
+The second thing is that \SYNEIGHT is transaction oriented and not
+algorithmic. In this way you ask \SYNEIGHT to do something like altering
+a variable in an object and that that in the meantime no one else
+accesses it. In an algorithmic environment you would have to set locks
+and really think about all the complexity of concurrency in algorithmic
+means. All that is hidden behind the transaction interface of \SYNEIGHT.
+
+That all is not fully automatic because it is not possible that complex
+concurrency issues are resolved efficiently by ``intelligent'' code. But
+using insulation levels that only define what kind of access to an
+object is needed.
+
+\subsection{Not a relational database?}
+
+This question is very easy. \SYNEIGHT is object oriented and does not
+contain static tables. That is obviously a contrary to a relational
+database design.
+
+\subsection{Not an object oriented client-server database?}
+
+\begin{figure}[tbp]
+	\begin{center}
+		\includegraphics[scale=0.5]{./image/client-server}
+	\end{center}
+	\caption{Client Server Model}
+	\label{fig:client-server}
+\end{figure}
+\begin{figure}[tbp]
+	\begin{center}
+		\includegraphics[scale=0.5]{./image/execution-environment}
+	\end{center}
+	\caption{Execution Environment}
+	\label{fig:execution-environment}
+\end{figure}
+
+The main point in that question is ``client-server''. All known
+object oriented databases are subject to the client-server
+model (see \ref{fig:client-server}). In this model the client
+application is doing all the algorithmic work and only accesses the
+objects stored in remotely in the database.
+
+\SYNEIGHT is built in a different way. The applications run in the
+database (see \ref{fig:execution-environment}). That means that not
+applications (also called tasks) come to the database but the database
+comes to the applications. The tasks are insulated from \SYNEIGHT trough
+the transaction interface even though the code itself is executed in
+the context of \SYNEIGHT. One can create a client-server application on
+top of \SYNEIGHT, creating a task, that provides a protocol for clients,
+running outside of \SYNEIGHT. But it has nothing to do with the middleware
+itself.  It is the consequence of this design that \SYNEIGHT is sometimes
+described as a dynamic object oriented database.
+
+\begin{todo}
+	give a reason why it is better then letting the tasks run
+	outside of \SYNEIGHT
+\end{todo}
+
+\section{Why \SYNEIGHT}
+
+The question you may now ask is why to create \SYNEIGHT and not use
+already existent middleware systems for message passing like SimNet for
+example.
+
+The short answer is: These systems are application specific
+\SYNEIGHT is not.
+
+And now the longer answer.
+
+Searching for \NVES you will find some solutions for real-time
+simulations but these are developed for specific applications.  There is
+no real abstracted middleware that would be usable for a wide range of
+different \NVE applications. \SYNEIGHT is a layered abstracted library
+that can be easily adapted for specific \NVE applications.
+
+% vim:ts=4:sw=4

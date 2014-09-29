@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+
+nest_count = 0
+nest = ""
+anti_nest = ""
+fill = "-"
+color_normal = "\033[00m"
+color_red = "\033[31m"
+color = color_normal
+
+while gets
+	gsub(/(\.\.\/)*/, "")
+	$_ =~ /^(\d+) ([A-Z]{3}) (\S+) : ([A-Z_]+) +: (.*) (\d+) (\S+) (\S+) (\d+)$/
+
+	time = "#$1"
+	level = "#$2"
+	category = "#$3"
+	type = "#$4"
+	what = "#$5"
+	int_what = "#$6"
+
+	nest = ""
+	for i in 0...nest_count*8 do
+		nest = "#{nest}#{fill}"
+	end
+	anti_nest = ""
+	anti_nest_count = 30 - type.size()
+	if anti_nest_count > 0 then
+		for i in 0...anti_nest_count do
+			anti_nest = "#{anti_nest}#{fill}"
+		end
+	else
+		anti_nest = ""
+	end
+	case type
+	when /ENTER/
+		nest_count = nest_count + 1
+	when /EXIT/
+		nest_count = nest_count - 1
+		nest = ""
+		for i in 0...nest_count*8 do
+			nest = "#{nest}#{fill}"
+		end
+		anti_nest = ""
+		anti_nest_count = 30 - type.size()
+		if anti_nest_count > 0 then
+			for i in 0...anti_nest_count do
+				anti_nest = "#{anti_nest}#{fill}"
+			end
+		else
+			anti_nest = ""
+		end
+	end
+	
+	case type
+	when /FAILED_CHECK/ then
+		color = color_red
+	when /WRONG_EXCEPTION/ then
+		color = color_red
+	when /MISSING_EXCEPTION/ then
+		color = color_red
+	when /UNEXPECTED_EXCEPTION/ then
+		color = color_red
+	else
+		color = color_normal
+	end
+
+	puts "#{color}#{level} #{nest} #{type} #{anti_nest} #{what}#{color_normal}"
+end

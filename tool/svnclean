@@ -1,0 +1,61 @@
+#!/bin/bash
+
+unversioned=$(svn status --no-ignore | grep '^\(\?\|I\)' | sed 's,^\(\?\|I\)[[:space:]]*,,')
+
+function delete() {
+	suspicious=$(svn status --no-ignore | grep '^\(\?\|I\)' | sed 's,^\(\?\|I\)[[:space:]]*,,' | grep '.[ch]pp$')
+
+	echo -e  "\033[31mThat will remove all files which are not under svn control!"
+	echo -e  "Be VERY careful with it!"
+	if [ "$suspicious" != "" ]; then
+		echo -e "\033[33mThese files look suspicious but are scheduled for deletion:\033[00m"
+		for i in $suspicious; do
+			echo $i
+		done	
+	fi
+	echo -en "\033[31mAre you sure?\033[00m [y/n] : "
+
+	answer=n
+
+	while [ "$answer" != "y" ]; do
+		read answer
+		case "$answer" in
+			[yY][eE][sS])	answer=y;;
+			[nN][oO])	exit 0;;
+			[yY])		;;
+			[nN])		exit 0;;
+			*)		echo "y[es] or n[o] required!"
+		esac
+	done
+
+	for i in "10" "9" "8" "7" "6" "5" "4" "3" "2" "1"; do
+		echo -en "\033[31mYou have $i seconds left to abort!\033[00m    "
+		sleep 1
+		echo -en "\r"
+	done
+	echo -e "\033[31mNow erasing all files not under version control!\033[00m"
+
+	#unversioned=$(svn status | grep '^\(\?\|I\)' | sed 's,^\(\?\|I\)[[:space:]]*,,')
+
+	for i in $unversioned; do
+		rm -rfv $i
+	done
+}
+
+function list () {
+	for i in $unversioned; do
+		echo $i
+	done
+}
+
+echo -n "Do you want to remove or only list files that are not under version control?
+[L(ist)/d(elete)]"
+
+answer=l
+
+read answer
+case "$answer" in
+	[dD][eE][lL][eE][tT][eE])	delete;;
+	[dD])				delete;;
+	*)				list;;
+esac

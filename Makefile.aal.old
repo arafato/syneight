@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--DOCTYPE aac PUBLIC "-//Syneight Group//DTD AutaAutoConf 1.0//EN" "http://www.syneight.informatik.tu-muenchen.de/DTDs/aac-1.0.dtd"-->
+<aac version="1.0">
+	<cpp>
+		<option name="-I" type="this"/>
+		<option name="-D" type="string">SYNEIGHT__SWITCH__BUILD_LEVEL=2</option>
+	</cpp>
+	<amcpp>
+		<option name="-I" type="string">$(top_srcdir)</option>
+		<option name="-I" type="string">$(top_builddir)</option>
+		<option name="-I" type="string">$(top_srcdir)/build/include</option>
+	</amcpp>
+	<files>
+		<file name="makefile_am" create="false"/>
+	</files>
+	<subdir name="syneight"/>
+	<dep_resolve_jumps>unconditional</dep_resolve_jumps>
+</aac>
+<!-- vim:ts=4:sw=4
+-->

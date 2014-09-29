@@ -1,0 +1,86 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# Syneight - A soft-realtime transaction monitor
+# Copyright (C) 2003-2005 The Syneight Group
+#
+# TODO: License.
+#------------------------------------------------------------------------------
+
+# Read command line options.
+while [ $# -ge 1 ]; do
+	case $1 in
+		-h|--help)	shift
+			echo "bootstrap"
+			;;
+		*)	echo "bootstrap: unknown option '$1'"
+			echo "bootstrap: run bootstrap -h to get help"
+			exit 1
+			;;
+	esac
+done
+
+# Save a newline into a shell variable.
+nl='
+'
+
+# Set the path where we expect to find our required utilities.
+PATH="/sw/bin:/bin:/usr/bin:/usr/local/bin"
+export PATH
+
+# Work around a bug in automake 1.4. It expects a ChangeLog file to exist.
+touch ChangeLog
+
+# Recursively create Makefile.am's.
+echo "bootstrap: creating Makefile.am's"
+autoaal
+if [ "$?" != 0 ]; then
+	echo "bootstrap: error occured while executing autoaal"
+	exit
+fi
+
+# Generate doxygen-*.conf.in files.
+# TODO: Remove this script later on. Functionality will be directly in AutoAAL.
+# Note: The given paths must be absolute, hence the 'pwd'.
+./tool/doxydoc `pwd`/syneight `pwd`/doc/api
+
+# Generate configure.ac from configure.ac.in supplying it with all Makefiles
+# which need to be created by configure.
+echo "bootstrap: creating configure.ac"
+subdirs=`find syneight -type d ! -path "*/.svn*" ! -path "*/CVS*" ! -path "*/.deps*" ! -path "*/.libs*"  -print`
+makefiles=
+for subdir in $subdirs; do
+	makefiles="$makefiles$subdir/Makefile\\$nl"
+done
+sed "s'__SYNEIGHT_MAKEFILES__'$makefiles'" configure.ac.in > configure.ac
+
+# Append include of Makefile.common to all Makefile.am's.
+makefileams=`find syneight -name Makefile.am`
+for makefileam in $makefileams; do
+  echo 'include $(top_srcdir)/Makefile.common' >> $makefileam
+done
+
+# Create all necessary autoconf/automake/libtool files.
+# echo -n "bootstrap: checking if we have a Gentoo system... "
+if [ -f /etc/gentoo-release ]; then
+	# echo "yes"
+	# echo "bootstrap: making gentoo specific settings"
+	WANT_AUTOCONF="1.7"
+	WANT_AUTOMAKE="1.7"
+	export WANT_AUTOCONF WANT_AUTOMAKE
+#else
+	# echo "no"
+fi
+echo "bootstrap: running autoreconf (may take a while)"
+
+# Doing some magic with file descriptors so that we only grep the normal
+# stderr.
+
+# Allocating a descriptor 3.
+exec 3> /dev/stdout
+
+# Running autoreconf with magic.
+autoreconf -i 2>&1 1>&3 | grep -v "warning: underquoted definition of" | \
+	grep -v "Extending aclocal" | grep -v "sources.redhat.com" | \
+	grep -v "use \`--force' to overwrite" 1>&2 3>&1
+
+# vim:ts=4:sw=4

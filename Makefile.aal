@@ -1,0 +1,68 @@
+AAL_CXXFLAGS = XXX
+AAL_CXXFLAGS = -DSYNEIGHT__SWITCH__BUILD_LEVEL=2
+
+AAL_AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/build/include
+
+AAL_SUBDIRS = syneight
+
+# AAL_CREATE_MAKEFILE_AM = false
+
+AAL_CONDITIONAL_JUMPS = false
+
+##------------------------------------------------------------------------------
+## Syneight - A soft-realtime transaction monitor
+## Copyright (C) 2003-2004 The Syneight Group
+##
+## TODO: License.
+##------------------------------------------------------------------------------
+
+## Extra files which should be included in the distribution.
+EXTRA_DIST = \
+AUTHORS \
+BUGS \
+INSTALL \
+LICENSE \
+NEWS \
+README \
+TODO
+
+## Subdirectories to process.
+SUBDIRS = syneight doc m4 tool
+
+## Syneight specific recursive Makefile targets.
+SYNEIGHT_RECURSIVE_TARGETS = docs docs-ps docs-pdf docs-api
+
+## Call the respective Makefile rule in each subdirectory listed in SUBDIRS.
+$(SYNEIGHT_RECURSIVE_TARGETS):
+	@subdirs='$(SUBDIRS)'; \
+	target=`echo $@`; \
+	for subdir in $$subdirs; do \
+	echo "Making $$target in $$subdir"; \
+	(cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target) || exit 1; \
+	done;
+
+## Files which should be removed by 'make maintainer-clean'.
+MAINTAINERCLEANFILES = \
+aclocal.m4 \
+config.guess \
+config.h.in \
+config.sub \
+configure \
+depcomp \
+install-sh \
+ltmain.sh \
+missing \
+mkinstalldirs \
+stamp-h.in
+
+## Create a ChangeLog file from the output of 'svn log' and include it in
+## the distribution.
+dist-hook:
+	$(top_srcdir)/tool/svn2cl > $(distdir)/ChangeLog
+
+## Set the path to our own aclocal macros.
+ACLOCAL_AMFLAGS = -I m4
+
+# Include some common Makefile targets.
+include $(top_srcdir)/Makefile.common
+

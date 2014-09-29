@@ -1,0 +1,317 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Log4Cpp - A short overview}
+
+\section{Appenders}
+All Appender objects are inherited from {\em Appender}. {\em LayoutAppender} is the common superclass
+for all Appenders that require a Layout. Log4Cpp allows a Category object to log messages to multiple destinations
+by using an appender object. It provides Appenders for:
+\begin{itemize}
+	\item{Files}
+	\item{OStreams}
+	\item{UNIX syslog daemons}
+	\item{Remote UNIX syslog daemons}
+\end{itemize}
+
+\subsection {FileAppender}
+A FileAppender allows you to log to a file.
+\begin{verbatim}
+ log4cpp::FileAppender::FileAppender(const std::string & name,
+		                     const std::string & fileName,
+		                     bool append = true,
+		                     mode_t mode = 00644
+                                    )
+\end{verbatim}  	
+
+\begin{description}
+	\item[name] the name of the Appender.
+ 	\item[fileName]	the name of the file to which the Appender has to log.
+	\item[append] 	whether the Appender has to truncate the file or just append to it if it already exists. 
+			Defaults to 'true'.
+	\item[mode]	file mode to open the logfile with. Defaults to 00644. 
+\end{description}
+
+\subsection{OstreamAppender}
+A OstreamAppender allows you to log to any ostream object. 
+\begin{verbatim}
+log4cpp::OstreamAppender::OstreamAppender(const std::string & name,
+					  std::ostream * stream
+					 )  	
+\end{verbatim}
+\begin{description}
+	\item[name] the name of the Appender.
+ 	\item[stream] the stream object to log to.
+\end{description}
+
+
+\subsection{SyslogAppender}
+A SyslogAppender allows you to log to a local syslog daemon. 
+Note that the C syslog API is process global, so instantion of a 
+second SyslogAppender will overwrite the syslog name of the first.
+\begin{verbatim}
+log4cpp::SyslogAppender::SyslogAppender(const std::string & name,
+		const std::string & syslogName,
+		int facility = LOG_USER
+		)  
+\end{verbatim}
+\begin{description}
+	\item[name] the name of the Appender.
+ 	\item[syslogName] the ident parameter in the openlog(3) call.
+	\item[facility] the syslog facility to log to. Defaults to LOGUSER
+\end{description}
+
+\subsection{SyslogAppender}
+RemoteSyslogAppender sends LoggingEvents to a remote syslog system.
+\begin{verbatim}
+log4cpp::RemoteSyslogAppender::RemoteSyslogAppender(const std::string & name,
+		const std::string & syslogName,
+		const std::string & relayer,
+		int facility = LOG_USER,
+		int portNumber = 514
+	)  
+\end{verbatim}
+\begin{description}
+	\item[name] the name of the Appender.
+ 	\item[syslogName] the ident parameter in the openlog(3) call.
+	\item[relayer] the IP address or hostname of a standard syslog host
+	\item[facility] the syslog facility to log on. Defaults to LOGUSER. Value -1 implies to
+			use the default.
+	\item[portNumber] An alternative port number. Defaults to the standard syslog port number(514).
+			  Value -1 implies to use the default.
+\end{description}
+
+
+\section{Layout}
+A Layout object tells an Appender object how to format the log. Currently there are three different Layout
+classes available which are all inherited from the abstract base class {\em Layout}. Please note that every single Appender
+expects his own layout object! Otherwise you will get a {\em Segmentation fault} and logging won't work properly!
+\begin{itemize}	
+	\item{SimpleLayout}
+	\item{BasicLayout}	
+	\item{PatternLayout}
+\end{itemize}
+
+LoggingEvents are log4cpp's internal representations of a log message! See Section 4 for more
+information!
+
+\subsection{SimpleLayout}
+SimpleLayout formats the LoggingEvent in the following style:\\
+{\sc priority - message}\\
+{\bf Usage:}
+\begin{verbatim}
+log4cpp::Layout * simpleLayout = new log4cpp::SimpleLayout();
+\end{verbatim}
+
+\subsection{BasicLayout}
+BasicLayout formats the LoggingEvent in the following style:\\
+{\sc timeStamp - priority - category - ndc: message}\\
+{\bf Usage:}
+\begin{verbatim}
+log4cpp::Layout * basicLayout = new log4cpp::BasicLayout();
+\end{verbatim}
+
+\subsection{PatternLayout}
+PatternLayout gives you a lot of control on how the LoggingEvent is to look like.
+You can choose from a huge variety of options.\\
+{\bf Usage:}\\
+First of all you have to initiate a PatternLayout object.
+\begin{verbatim}
+log4cpp::Layout* patternLayout = new log4cpp::PatternLayout();
+\end{verbatim}
+To set the format of the log lines handled by this PatternLayout, you have to call
+\begin{verbatim}
+void log4cpp::PatternLayout::
+		setConversionPattern(const std::string & conversionPattern) 
+	        throw (configureFailure)
+\end{verbatim}
+Please note that the method {\em setConversionPattern} is not inherited from the base class {\em Layout}!\\
+A {\em configureFailure} exception is thrown if the conversionPattern is invalid.
+{\bf conversionPattern} can be composed from the following characters:
+\begin{itemize}
+	\item{\%c - the category}
+	\item{\%d - the date}
+	\item{\%m - the message}
+        \item{\%n - the platform specific line separator}
+        \item{\%p - the priority}
+        \item{\%r - milliseconds since this layout was created}
+       	\item{\%R - seconds since Jan 1, 1970}
+       	\item{\%u - clock ticks since process start}
+       	\item{\%x - the NDC}
+\end{itemize}
+{\bf Date format:}\\
+The date format character may be followed by a date format specifier enclosed between braces. 
+For example, \%d{\%H:\%M:\%S,\%l} or \%d{\%d \%m \%Y \%H:\%M:\%S,\%l}. If no date format specifier is given then the following
+format is used: "Wed Jan 02 02:03:55 1980". The date format specifier admits the same syntax as the ANSI C
+function strftime, with 1 addition. The addition is the specifier \%l for milliseconds, padded with zeros to make 3 digits.
+
+\section{Categories and Priorities}
+The base class {\em Category} provides many methods to perform the actual logging.
+You have to assign a priority to it. Furthermore every log message itself has a priority.
+Depending on that, log messages are skipped or processed by the category object if the message
+priority is lower or equal than the category priority. When a category object is created, it starts life with a 
+default appender of standard out and a default priority of {\em Notset}. \\
+The enum {\em PriorityLevel} is defined in the base class {\em Priority}. The following levels are defined:
+\begin{description}
+	\item{{\sc Emerg = 0}}
+	\item{{\sc Fatal = 0}}
+	\item{{\sc Alert = 100}}
+	\item{{\sc Crit = 200}}
+	\item{{\sc Error = 300}}
+	\item{{\sc Warn = 400}}
+	\item{{\sc Notice = 500}}
+	\item{{\sc Info = 600}}
+	\item{{\sc Debug = 700}}
+	\item{{\sc Notset = 800}}
+\end{description}
+By default the priority is set to {\sc Notset}.\\
+The constructor of {\em Category} is protected, so you have to to use the following static method to instantiate a
+child category object.
+The Category class creates one overall static root category object. Please note that the root category does not have a name!
+The application can create instances of children categories from this one static parent.
+\begin{verbatim}
+Category & log4cpp::Category::getInstance(const std::string & name)
+\end{verbatim}
+\begin{description}
+	\item[name] the name of the category to retrieve
+\end{description}
+If you want to create a child {\sc sub2} from a parent {\sc sub1}, you have to write:
+\begin{verbatim}
+log4cpp::Category & sub2 = log4cpp::Category::getInstance(``SUB1.SUB2'');
+\end{verbatim}
+By default, root is always the parent!
+Note that this method does not set the priority of category!\\
+Use the method {\em Category::setPriority} to set the Priority Level:
+\begin{verbatim}
+void log4cpp::Category::setPriority(Priority::Value priority) 
+				    throw (std::invalid_argument) 
+\end{verbatim}
+\begin{description}
+	\item[priority] the Priority to set. Use {\em Priority::NOTSET} to let the category use its parents
+			priority as effective priority.
+	\item[Exception: std::invalid\_argument] if the caller tries to set {\em Priority::NOTSET} on the
+						Root Category.
+\end{description}
+In contrast to {\sc log4j} where the priority of the parent is always inherited to the child if not stated otherwise, 
+log4cpp does not offer this feature! Therefore you have to set the priority for every category object manually!
+
+\subsection{How to generate log messages}
+There are several ways to let log4cpp generate log messages. There is the simple log()-method,
+mnemonic methods for the severity level and stream operations.
+
+\subsubsection{The log()-method}
+\begin{verbatim}
+void log4cpp::Category::log(Priority::Value priority,
+		const std::string & message
+		)throw ()
+\end{verbatim}
+\begin{description}
+	\item[priority] the priority of this message
+	\item[message] the log message
+\end{description}
+
+\subsubsection{Mnemonic methods}
+The name of the method itself indicates the severity level.
+The name is equal to the priority level. As every log message has to have
+a priority assigned to it, there does not exist a method called {\em notset}, of course.
+The log message is simply passed by an argument, i.e if you want to generate a message
+with priority {\sc Alert} the syntax is:
+\begin{verbatim}
+void log4cpp::Category::alert(const std::string & message) throw ()	
+\end{verbatim}
+
+\subsubsection{Stream style operations}
+There are two possibilities how to use stream operations.
+They can be used directly with the category object and are preceded by the severity level.
+For instance, suppose you want to generate a log message with priority {\em error} assigned to it.
+\begin{verbatim}
+cat_obj << log4cpp::Priority::ERROR << "logmessage" << 
+	log4cpp::CategoryStream::ENDLINE;
+\end{verbatim}
+Note that {\em CategoryStream::ENDLINE} is part of the enumeration {\em Separators}. 
+Currently it only contains the 'ENDLINE' separator, which separates two log messages.
+
+The second possibility is to use a method that will return a {\em CategoryStream} with its priority
+already assigned to it. Priority depends - once again - on the method you use, so for every priority level there
+exists a method(<Prioritylevel>Stream()). Suppose you want to generate a log message with priority {\em debug}.
+\begin{verbatim}
+cat_obj.debugStream() << "logmessage" << log4cpp::CategoryStream::ENDLINE;
+\end{verbatim}
+
+\section{LoggingEvents}
+As already mentioned earlier above a logging event is log4cpps internal representation of a log message.
+The base class {\em LoggingEvent} only consists of one public constructor(has no destructor!).
+\begin{verbatim}
+log4cpp::LoggingEvent::LoggingEvent(const std::string & category,
+		const std::string & message,
+		const std::string & ndc,
+		Priority::Value priority
+		)  	
+\end{verbatim} 
+\begin{description}
+	\item[category] The category of this event.
+	\item[message] The message of this event.
+	\item[ndc] The nested diagnostic context.
+	\item[priority] The priority of this event.\\
+\end{description}
+Furthermore, {\em LoggingEvent} has the following public attributes:
+\begin{description}
+	\item[const string categoryName] The category name.
+	\item[const string message] The application supplied message of logging event.
+	\item[const string ndc] The nested diagnostic context of logging event.
+	\item[Priority::PriorityLevel priority] Priority of logging event.
+	\item[const string threadName] The name of thread in which this logging event was generated, e.g.
+				       the PID. 
+	\item[TimeStamp timeStamp] The number of seconds elapsed since the epoch (1/1/1970 00:00:00 UTC) 
+				   until logging event was created.
+\end{description}
+
+\section{Configuration files}
+TODO
+
+\section{Filters}
+TODO
+
+\section{How does this all hang together?}
+Basically, log4cpp has three main components:
+\begin{itemize}
+	\item{Appenders}
+	\item{Layouts}
+	\item{Categories}
+\end{itemize}
+An {\sc appender class} writes the log message out to some device, which depends on the appender class you've chosen, of course.\\\\
+A {\sc layout class} controls what the message is going to look like.\\\\
+A {\sc category class} does the actual logging. The two main parts of a category are its appenders and its priority. Priority
+controls which messages can be logged by a particular class. One or more appenders can be added to the list of destinations for
+logging. An appender when added to a category becomes an additional output destination unless the {\em Additivity Flag} is
+set to false. If it is false, the appender added to the category replaces all previously existing appenders. Please note that
+every log message of a category child will also be passed to its parent!
+
+Basically there are six initial steps to using a log4cpp log:
+\begin{enumerate}
+	\item{Instantiate an appender object.}
+	\item{Instantiate a layout object.}
+	\item{Attach the layout object to the appender (appender->setLayout(layout);}
+	\item{Instantiate a category object.}
+	\item{Attach the appender object to the category either as an additional appender or as the only appender(depends on
+		{\em Additivity Flag})}
+	\item{Set a priority for the category unless you simply want to log everything}
+\end{enumerate}
+
+
+
+%\end{itemize}
+%\begin{description}
+%\item[Oberpunkt1]$\;$
+%	\begin{description}
+%		\item[bla:] Erklärung 1
+%		\item[bla2:] Erklärung 2
+%	\end{description}
+%\end{description}
+%\end{itemize}
+
+% vim:ts=4:sw=4

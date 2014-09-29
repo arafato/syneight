@@ -1,0 +1,85 @@
+%------------------------------------------------------------------------------
+% Syneight - A soft-realtime transaction monitor.
+% Copyright (C) 2003-2004 The Syneight Group.
+%
+% TODO: License.
+%------------------------------------------------------------------------------
+
+\chapter{Subversion}
+\label{cha:subversion}
+
+\section{Introduction}
+\label{sec:introduction}
+
+\section{Commit Guidelines}
+\label{sec:commit-guidelines}
+
+\subsection{When To Commit}
+\label{sec:when-to-commit}
+
+\begin{guideline*}{Commit early, commit often}
+  Try to commit your changes early and often, so that the diffs
+  are small (but cohesive). Do not commit the work of several hours/days at
+  once, especially not if the changes you made are unrelated to each other.
+\end{guideline*}
+
+\begin{guideline*}{Run {\tt svn update} before you commit}
+  Always run {\tt svn update} before committing to make sure the file(s)
+  you commit are up to date.
+  Otherwise, you risk overwriting changes done by other developers in the
+  meantime.
+  You possibly will need to merge your changes with those of the other
+  developers, if you changed the same lines of a file like the other
+  developers.
+  The longer it takes before you update, the harder it'll be for SVN
+  to merge your changes with the changes done by other developers.
+\end{guideline*}
+
+\begin{guideline*}{Check exactly what you commit}
+  Always check with {\tt svn diff} what exactly you are committing.
+  {\tt svn diff} is also very useful to get an overview of what you changed
+  and hence should mention in the commit message. Do \emph{not} just write
+  the commit logs from what you remember or think you changed!
+  Always use {\tt svn diff}!
+\end{guideline*}
+
+\begin{guideline*}{Test your changes before you commit}
+  Everything that worked before the commit should still work after the commit.
+  E.g. all code should still compile after the commit. Also, if you change
+  the documentation, {\tt make docs} should still work.
+\end{guideline*}
+
+\begin{guideline*}{One issue per commit}
+  Commit one cohesive feature, bugfix or change at a time. Do \emph{not}
+  mix a bunch of unrelated changes in the same commit.
+  This makes it easier to review changes, and - if necessary - undo specific
+  changes.
+  If a single, cohesive change involves several files, commit all of them
+  in the same commit.
+\end{guideline*}
+
+
+\subsection{Commit Log Messages}
+\label{sec:commit-log-messages}
+
+Each commit should have a brief but concise and informative comment.
+
+
+\section{Branches}
+\label{sec:branches}
+
+\section{Tags}
+\label{sec:tags}
+
+\section{Code}
+\label{sec:code}
+
+\section{ID Strings}
+\label{sec:id-strings}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "tools"
+%%% End: 
+% vim:ts=4:sw=4
